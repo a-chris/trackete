@@ -11,8 +11,10 @@ import (
 	"github.com/a-chris/trackete/backend/internal/model"
 )
 
+// today resolves the "as of" day. The SPA sends `today`; `to` and `date` are
+// kept for API clients. Values that are not YYYY-MM-DD are ignored.
 func today(c *gin.Context) time.Time {
-	for _, key := range []string{"to", "date"} {
+	for _, key := range []string{"today", "to", "date"} {
 		if raw := c.Query(key); raw != "" {
 			if t, err := time.Parse(analytics.DayLayout, raw); err == nil {
 				return analytics.DateOnly(t)
@@ -39,6 +41,22 @@ func resolveRange(c *gin.Context) (time.Time, time.Time, error) {
 	return from, to, nil
 }
 
+// streakHistoryFrom returns the earliest day loaded for streak computation: the
+// tracker's first entry, bounded to AllRangeDays before the chart end. Charts
+// keep rendering only [from, to], the extra days exist so a long run is not
+// truncated by the selected range.
+func streakHistoryFrom(to time.Time, earliest string) time.Time {
+	from := to.AddDate(0, 0, -(analytics.AllRangeDays - 1))
+	if earliest != "" {
+		if d, err := time.Parse(analytics.DayLayout, earliest); err == nil {
+			if d = analytics.DateOnly(d); d.After(from) {
+				from = d
+			}
+		}
+	}
+	return from
+}
+
 func (a *API) overview(c *gin.Context) {
 	uid := userID(c)
 	now := today(c)
@@ -63,13 +81,19 @@ func (a *API) overview(c *gin.Context) {
 	if monthStart.Before(from) {
 		from = monthStart
 	}
+	// Period totals need the week/month start; streaks need the long history.
+	streakFrom := streakHistoryFrom(now, "")
+	fetchFrom := from
+	if streakFrom.Before(fetchFrom) {
+		fetchFrom = streakFrom
+	}
 
 	trackers, err := a.store.ListTrackers(c.Request.Context(), uid, false)
 	if err != nil {
 		failStore(c, err)
 		return
 	}
-	byTracker, err := a.store.EntriesBetween(c.Request.Context(), uid, from.Format(analytics.DayLayout), now.Format(analytics.DayLayout))
+	byTracker, err := a.store.EntriesBetween(c.Request.Context(), uid, fetchFrom.Format(analytics.DayLayout), now.Format(analytics.DayLayout))
 	if err != nil {
 		failStore(c, err)
 		return
@@ -129,14 +153,15 @@ func (a *API) overview(c *gin.Context) {
 		}
 
 		summary := analytics.Build(entries, analytics.Options{
-			Name:      tracker.Name,
-			Kind:      tracker.Kind,
-			Unit:      tracker.Unit,
-			Goal:      tracker.Goal,
-			ChartType: model.ChartStat,
-			From:      now.AddDate(0, 0, -400),
-			To:        now,
-			Today:     now,
+			Name:        tracker.Name,
+			Kind:        tracker.Kind,
+			Unit:        tracker.Unit,
+			Goal:        tracker.Goal,
+			ChartType:   model.ChartStat,
+			From:        now.AddDate(0, 0, -400),
+			To:          now,
+			HistoryFrom: streakFrom,
+			Today:       now,
 		}).Summary
 		item.Streak = summary.CurrentStreak
 

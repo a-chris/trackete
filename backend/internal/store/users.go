@@ -42,7 +42,7 @@ func (s *Store) CreateUser(ctx context.Context, email, name, passwordHash string
 
 func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, string, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, email, name, password_hash, created_at FROM users WHERE email = ?`,
+		`SELECT id, email, name, password_hash, created_at, token_version FROM users WHERE email = ?`,
 		strings.ToLower(strings.TrimSpace(email)),
 	)
 	var (
@@ -50,7 +50,7 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, str
 		hash    string
 		created string
 	)
-	if err := row.Scan(&u.ID, &u.Email, &u.Name, &hash, &created); err != nil {
+	if err := row.Scan(&u.ID, &u.Email, &u.Name, &hash, &created, &u.TokenVersion); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, "", ErrNotFound
 		}
@@ -62,13 +62,13 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (*model.User, str
 
 func (s *Store) UserByID(ctx context.Context, id string) (*model.User, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, email, name, created_at FROM users WHERE id = ?`, id,
+		`SELECT id, email, name, created_at, token_version FROM users WHERE id = ?`, id,
 	)
 	var (
 		u       model.User
 		created string
 	)
-	if err := row.Scan(&u.ID, &u.Email, &u.Name, &created); err != nil {
+	if err := row.Scan(&u.ID, &u.Email, &u.Name, &created, &u.TokenVersion); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -89,15 +89,27 @@ func (s *Store) UpdateUserName(ctx context.Context, userID, name string) error {
 	return expectOne(res)
 }
 
-func (s *Store) UpdateUserPassword(ctx context.Context, userID, passwordHash string) error {
+// UpdateUserPassword stores a new hash and bumps token_version so every
+// existing session is rejected. It returns the new version, which the caller
+// embeds in the replacement session token.
+func (s *Store) UpdateUserPassword(ctx context.Context, userID, passwordHash string) (int, error) {
 	res, err := s.db.ExecContext(ctx,
-		`UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`,
+		`UPDATE users SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?`,
 		passwordHash, formatTime(now()), userID,
 	)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return expectOne(res)
+	if err := expectOne(res); err != nil {
+		return 0, err
+	}
+	var version int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT token_version FROM users WHERE id = ?`, userID,
+	).Scan(&version); err != nil {
+		return 0, err
+	}
+	return version, nil
 }
 
 func expectOne(res sql.Result) error {

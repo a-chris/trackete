@@ -12,6 +12,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
       TOKEN_TTL: ${TOKEN_TTL:-720h}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
     volumes:
       - trackete-data:/data
     restart: unless-stopped

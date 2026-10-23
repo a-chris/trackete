@@ -60,8 +60,10 @@ func (a *API) register(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "password must be at least 8 characters")
 		return
 	}
-	if len(req.Password) > 256 {
-		fail(c, http.StatusBadRequest, "password is too long")
+	// bcrypt refuses inputs above 72 bytes; validate before hashing so an
+	// over-long password is a 400 rather than a 500.
+	if len([]byte(req.Password)) > auth.MaxPasswordBytes {
+		fail(c, http.StatusBadRequest, "password must be 72 bytes or fewer")
 		return
 	}
 	if name == "" {
@@ -88,7 +90,7 @@ func (a *API) register(c *gin.Context) {
 		return
 	}
 
-	token := a.issueSession(c, user.ID)
+	token := a.issueSession(c, user.ID, user.TokenVersion)
 	a.limiter.reset(c.ClientIP())
 	c.JSON(http.StatusCreated, gin.H{"user": user, "token": token})
 }
@@ -116,7 +118,7 @@ func (a *API) login(c *gin.Context) {
 		return
 	}
 
-	token := a.issueSession(c, user.ID)
+	token := a.issueSession(c, user.ID, user.TokenVersion)
 	a.limiter.reset(c.ClientIP())
 	c.JSON(http.StatusOK, gin.H{"user": user, "token": token})
 }
@@ -169,6 +171,10 @@ func (a *API) changePassword(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "new password must be at least 8 characters")
 		return
 	}
+	if len([]byte(req.NewPassword)) > auth.MaxPasswordBytes {
+		fail(c, http.StatusBadRequest, "new password must be 72 bytes or fewer")
+		return
+	}
 
 	uid := userID(c)
 	me, err := a.store.UserByID(c.Request.Context(), uid)
@@ -191,16 +197,18 @@ func (a *API) changePassword(c *gin.Context) {
 		failStore(c, err)
 		return
 	}
-	if err := a.store.UpdateUserPassword(c.Request.Context(), uid, newHash); err != nil {
+	version, err := a.store.UpdateUserPassword(c.Request.Context(), uid, newHash)
+	if err != nil {
 		failStore(c, err)
 		return
 	}
-	a.issueSession(c, uid)
+	// The version bump invalidates the old cookie; hand the caller a fresh one.
+	a.issueSession(c, uid, version)
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-func (a *API) issueSession(c *gin.Context, uid string) string {
-	token, err := auth.NewToken(a.cfg.JWTSecret, uid, a.cfg.TokenTTL)
+func (a *API) issueSession(c *gin.Context, uid string, version int) string {
+	token, err := auth.NewToken(a.cfg.JWTSecret, uid, version, a.cfg.TokenTTL)
 	if err != nil {
 		failStore(c, err)
 		return ""

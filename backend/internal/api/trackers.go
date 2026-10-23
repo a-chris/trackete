@@ -272,7 +272,18 @@ func (a *API) trackerData(c *gin.Context) {
 		return
 	}
 
-	entries, err := a.store.ListEntries(c.Request.Context(), tracker.ID, from.Format(analytics.DayLayout), to.Format(analytics.DayLayout))
+	earliest, err := a.store.EarliestEntryDay(c.Request.Context(), userID(c), tracker.ID)
+	if err != nil {
+		failStore(c, err)
+		return
+	}
+	historyFrom := streakHistoryFrom(to, earliest)
+	fetchFrom := from
+	if historyFrom.Before(fetchFrom) {
+		fetchFrom = historyFrom
+	}
+
+	entries, err := a.store.ListEntries(c.Request.Context(), tracker.ID, fetchFrom.Format(analytics.DayLayout), to.Format(analytics.DayLayout))
 	if err != nil {
 		failStore(c, err)
 		return
@@ -286,6 +297,7 @@ func (a *API) trackerData(c *gin.Context) {
 		ChartType:   chartType,
 		From:        from,
 		To:          to,
+		HistoryFrom: historyFrom,
 		Granularity: c.DefaultQuery("granularity", "auto"),
 		Aggregate:   c.DefaultQuery("aggregate", "sum"),
 		Metric:      c.DefaultQuery("metric", "total"),

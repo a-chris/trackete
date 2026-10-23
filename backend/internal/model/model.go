@@ -45,6 +45,9 @@ type User struct {
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"createdAt"`
+	// TokenVersion invalidates sessions issued before a password change. It is
+	// never exposed over the API.
+	TokenVersion int `json:"-"`
 }
 
 type Tracker struct {

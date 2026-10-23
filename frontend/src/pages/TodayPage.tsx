@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, Flame, Plus, Target } from 'lucide-react'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Spinner } from '../components/ui/Spinner'
 import { TodayTrackerCard } from '../components/trackers/TodayTrackerCard'
 import { TrackerFormModal } from '../components/trackers/TrackerFormModal'
+import { errorMessage } from '../lib/api'
 import { formatLongDate, todayKey } from '../lib/date'
 import { useOverview } from '../lib/queries'
 
 export function TodayPage() {
   const today = todayKey()
-  const { data, isLoading } = useOverview(today)
+  const { data, isLoading, isError, error, refetch, isFetching } = useOverview(today)
   const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
@@ -80,6 +82,13 @@ export function TodayPage() {
 
       {isLoading ? (
         <Spinner label="Loading your trackers…" />
+      ) : isError ? (
+        <ErrorState
+          title="Couldn't load your day"
+          description={errorMessage(error)}
+          onRetry={() => void refetch()}
+          retrying={isFetching}
+        />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Target}

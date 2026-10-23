@@ -306,19 +306,31 @@ func (a *API) dashboardData(c *gin.Context) {
 			continue
 		}
 
-		from := analytics.RangeStart(to, widget.Config.Range)
+		chartFrom := analytics.RangeStart(to, widget.Config.Range)
+		earliest, err := a.store.EarliestEntryDay(c.Request.Context(), uid, tracker.ID)
+		if err != nil {
+			failStore(c, err)
+			return
+		}
 		if widget.Config.Range == "all" {
-			earliest, err := a.store.EarliestEntryDay(c.Request.Context(), uid, tracker.ID)
-			if err == nil && earliest != "" {
+			if earliest != "" {
 				if d, perr := time.Parse(analytics.DayLayout, earliest); perr == nil {
-					from = analytics.DateOnly(d)
+					chartFrom = analytics.DateOnly(d)
 				}
 			} else {
-				from = analytics.RangeStart(to, "365d")
+				chartFrom = analytics.RangeStart(to, "365d")
 			}
 		}
 
-		entries, err := a.store.ListEntries(c.Request.Context(), tracker.ID, from.Format(analytics.DayLayout), toKey)
+		// Streaks see the tracker's full history (bounded), the buckets stay in
+		// the widget's range.
+		historyFrom := streakHistoryFrom(to, earliest)
+		fetchFrom := chartFrom
+		if historyFrom.Before(fetchFrom) {
+			fetchFrom = historyFrom
+		}
+
+		entries, err := a.store.ListEntries(c.Request.Context(), tracker.ID, fetchFrom.Format(analytics.DayLayout), toKey)
 		if err != nil {
 			failStore(c, err)
 			return
@@ -330,8 +342,9 @@ func (a *API) dashboardData(c *gin.Context) {
 			Unit:        tracker.Unit,
 			Goal:        tracker.Goal,
 			ChartType:   widget.ChartType,
-			From:        from,
+			From:        chartFrom,
 			To:          to,
+			HistoryFrom: historyFrom,
 			Granularity: widget.Config.Granularity,
 			Aggregate:   widget.Config.Aggregate,
 			Metric:      widget.Config.Metric,

@@ -1,9 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './api'
+import { api, isUnauthorized } from './api'
 import type { ChartData } from './types'
 
+// A rejected session (401) is final: retrying only delays the redirect. Network
+// blips and 5xx responses are worth one more attempt.
+function retryUnlessUnauthorized(failureCount: number, error: unknown): boolean {
+  return !isUnauthorized(error) && failureCount < 2
+}
+
 export function useMe() {
-  return useQuery({ queryKey: ['me'], queryFn: api.me, retry: false, staleTime: 5 * 60_000 })
+  return useQuery({
+    queryKey: ['me'],
+    queryFn: api.me,
+    retry: retryUnlessUnauthorized,
+    staleTime: 5 * 60_000,
+  })
 }
 
 export function useMeta() {

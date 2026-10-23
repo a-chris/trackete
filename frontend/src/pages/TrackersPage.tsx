@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Archive, ArchiveRestore, ListChecks, Pencil, Plus, Trash } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Spinner } from '../components/ui/Spinner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useToast } from '../components/ui/Toast'
@@ -15,7 +16,7 @@ import { trackerToInput } from '../lib/trackers'
 
 export function TrackersPage() {
   const toast = useToast()
-  const { data: trackers = [], isLoading } = useTrackers(true)
+  const { data: trackers = [], isLoading, isError, error, refetch, isFetching } = useTrackers(true)
   const { update, remove } = useTrackerMutations()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Tracker | null>(null)
@@ -147,6 +148,13 @@ export function TrackersPage() {
 
       {isLoading ? (
         <Spinner label="Loading trackers…" />
+      ) : isError ? (
+        <ErrorState
+          title="Couldn't load your trackers"
+          description={errorMessage(error)}
+          onRetry={() => void refetch()}
+          retrying={isFetching}
+        />
       ) : active.length === 0 && archived.length === 0 ? (
         <EmptyState
           icon={ListChecks}

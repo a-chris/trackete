@@ -101,9 +101,19 @@ func (s *Store) GetDashboard(ctx context.Context, userID, id string) (*model.Das
 	return &d, nil
 }
 
+// CreateDashboard inserts a dashboard, making it the default when it is the
+// user's first one. The count check and the insert share a transaction so two
+// concurrent creates cannot both claim is_default = 1 (which the partial unique
+// index would reject).
 func (s *Store) CreateDashboard(ctx context.Context, userID, name string) (*model.Dashboard, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	var count int
-	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(1) FROM dashboards WHERE user_id = ?`, userID).Scan(&count); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(1) FROM dashboards WHERE user_id = ?`, userID).Scan(&count); err != nil {
 		return nil, err
 	}
 	isDefault := 0
@@ -112,10 +122,13 @@ func (s *Store) CreateDashboard(ctx context.Context, userID, name string) (*mode
 	}
 	ts := formatTime(now())
 	id := newID()
-	if _, err := s.db.ExecContext(ctx,
+	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO dashboards (id, user_id, name, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		id, userID, strings.TrimSpace(name), isDefault, ts, ts,
 	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return s.GetDashboard(ctx, userID, id)
@@ -135,9 +148,18 @@ func (s *Store) RenameDashboard(ctx context.Context, userID, id, name string) (*
 	return s.GetDashboard(ctx, userID, id)
 }
 
+// DeleteDashboard removes a dashboard and, when it was the default, promotes the
+// oldest remaining one. Both steps run in one transaction and the promotion
+// error is returned so a user is never left without a default dashboard.
 func (s *Store) DeleteDashboard(ctx context.Context, userID, id string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	var isDefault int
-	err := s.db.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		`SELECT is_default FROM dashboards WHERE id = ? AND user_id = ?`, id, userID,
 	).Scan(&isDefault)
 	if err != nil {
@@ -146,17 +168,25 @@ func (s *Store) DeleteDashboard(ctx context.Context, userID, id string) error {
 		}
 		return err
 	}
-	if _, err := s.db.ExecContext(ctx, `DELETE FROM dashboards WHERE id = ? AND user_id = ?`, id, userID); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM dashboards WHERE id = ? AND user_id = ?`, id, userID); err != nil {
 		return err
 	}
 	if isDefault == 1 {
-		_, _ = s.db.ExecContext(ctx,
-			`UPDATE dashboards SET is_default = 1 WHERE id = (
+		res, err := tx.ExecContext(ctx,
+			`UPDATE dashboards SET is_default = 1, updated_at = ? WHERE id = (
 			   SELECT id FROM dashboards WHERE user_id = ? ORDER BY created_at ASC LIMIT 1
-			 )`, userID,
+			 )`, formatTime(now()), userID,
 		)
+		if err != nil {
+			return err
+		}
+		// No rows means this was the last dashboard; the next list/create call
+		// recreates a default one (see EnsureDefaultDashboard).
+		if _, err := res.RowsAffected(); err != nil {
+			return err
+		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 func scanWidget(scanner interface{ Scan(...any) error }) (*model.Widget, error) {

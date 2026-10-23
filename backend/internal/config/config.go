@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type Config struct {
 	AllowRegistration bool
 	StaticDir         string
 	CORSOrigins       []string
+	TrustedProxies    []string
 	Version           string
 }
 
@@ -44,9 +46,32 @@ func Load() Config {
 
 	if raw := env("CORS_ORIGINS", ""); raw != "" {
 		for _, origin := range strings.Split(raw, ",") {
-			if origin = strings.TrimSpace(origin); origin != "" {
-				c.CORSOrigins = append(c.CORSOrigins, origin)
+			if origin = strings.TrimSpace(origin); origin == "" {
+				continue
 			}
+			// A wildcard would reflect every Origin while still allowing
+			// credentials, so it is ignored: list the origins explicitly.
+			if origin == "*" {
+				log.Print("WARN: CORS_ORIGINS contains \"*\", ignoring it. " +
+					"Cookies are sent with credentials, so every origin must be listed explicitly.")
+				continue
+			}
+			c.CORSOrigins = append(c.CORSOrigins, origin)
+		}
+	}
+
+	if raw := env("TRUSTED_PROXIES", ""); raw != "" {
+		for _, proxy := range strings.Split(raw, ",") {
+			if proxy = strings.TrimSpace(proxy); proxy == "" {
+				continue
+			}
+			if _, _, err := net.ParseCIDR(proxy); err != nil {
+				if net.ParseIP(proxy) == nil {
+					log.Printf("WARN: invalid TRUSTED_PROXIES entry %q, ignoring it (use an IP or CIDR)", proxy)
+					continue
+				}
+			}
+			c.TrustedProxies = append(c.TrustedProxies, proxy)
 		}
 	}
 

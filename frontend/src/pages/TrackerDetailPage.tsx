@@ -14,8 +14,9 @@ import { Link, useParams } from 'react-router-dom'
 import { ChartRenderer } from '../components/charts/ChartRenderer'
 import { TrackerFormModal } from '../components/trackers/TrackerFormModal'
 import { EntryEditor } from '../components/trackers/EntryEditor'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Spinner } from '../components/ui/Spinner'
-import { api } from '../lib/api'
+import { api, errorMessage } from '../lib/api'
 import { rangeStart, todayKey } from '../lib/date'
 import { formatPercent, formatValue, goalLabel } from '../lib/format'
 import { useTrackerData, useTrackers } from '../lib/queries'
@@ -40,7 +41,7 @@ const ranges: { value: RangePreset; label: string }[] = [
 
 export function TrackerDetailPage() {
   const { trackerId = '' } = useParams()
-  const { data: trackers = [], isLoading } = useTrackers(true)
+  const { data: trackers = [], isLoading, isError, error, refetch, isFetching } = useTrackers(true)
   const tracker = trackers.find((candidate) => candidate.id === trackerId)
 
   const [range, setRange] = useState<RangePreset>('30d')
@@ -73,6 +74,16 @@ export function TrackerDetailPage() {
   }, [tracker])
 
   if (isLoading) return <Spinner label="Loading tracker…" />
+  if (isError) {
+    return (
+      <ErrorState
+        title="Couldn't load your trackers"
+        description={errorMessage(error)}
+        onRetry={() => void refetch()}
+        retrying={isFetching}
+      />
+    )
+  }
   if (!tracker) {
     return (
       <div className="surface p-8 text-center">

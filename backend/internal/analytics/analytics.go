@@ -13,6 +13,11 @@ const DayLayout = "2006-01-02"
 
 var weekdayNames = []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
+// AllRangeDays is the widest chart window, in days: ten years. Range presets and
+// the chart clamp share it so "all" cannot disagree with what analytics renders.
+// Rows are never deleted, this only bounds rendering.
+const AllRangeDays = 3660
+
 type Options struct {
 	Name        string
 	Kind        string
@@ -21,9 +26,10 @@ type Options struct {
 	ChartType   string
 	From        time.Time
 	To          time.Time
-	Granularity string // auto | day | week | month
-	Aggregate   string // sum | avg
-	Metric      string // total | average | count | streak
+	HistoryFrom time.Time // optional: extra days loaded before From for streaks
+	Granularity string    // auto | day | week | month
+	Aggregate   string    // sum | avg
+	Metric      string    // total | average | count | streak
 	Today       time.Time
 }
 
@@ -47,7 +53,7 @@ func RangeStart(to time.Time, preset string) time.Time {
 	case "365d":
 		return to.AddDate(0, 0, -364)
 	default:
-		return to.AddDate(0, 0, -1825)
+		return to.AddDate(0, 0, -(AllRangeDays - 1))
 	}
 }
 
@@ -61,9 +67,9 @@ func (o Options) resolved() (from, to time.Time, span int, gran string) {
 		from, to = to, from
 	}
 	span = int(to.Sub(from).Hours()/24) + 1
-	if span > 3660 {
-		from = to.AddDate(0, 0, -3659)
-		span = 3660
+	if span > AllRangeDays {
+		from = to.AddDate(0, 0, -(AllRangeDays - 1))
+		span = AllRangeDays
 	}
 
 	gran = o.Granularity
@@ -85,10 +91,18 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 	if o.Today.IsZero() {
 		o.Today = to
 	}
+	historyFrom := DateOnly(o.HistoryFrom)
+	if historyFrom.IsZero() || historyFrom.After(from) {
+		historyFrom = from
+	}
 	kind := o.kind()
 
 	daily := make(map[string]float64, len(entries))
 	logged := make(map[string]bool, len(entries))
+	// Streaks look further back than the chart window, so history keeps every
+	// day we were given while daily/logged stay clipped to [from, to].
+	historyDaily := make(map[string]float64, len(entries))
+	historyLogged := make(map[string]bool, len(entries))
 	first, last := "", ""
 	for _, e := range entries {
 		d, err := time.Parse(DayLayout, e.Day)
@@ -102,13 +116,18 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 		if last == "" || d.Format(DayLayout) > last {
 			last = d.Format(DayLayout)
 		}
-		if d.Before(from) || d.After(to) {
+		if d.After(to) || d.Before(historyFrom) {
 			continue
 		}
 		key := d.Format(DayLayout)
 		value := e.Value
 		if kind == model.KindBoolean {
 			value = boolValue(value)
+		}
+		historyDaily[key] = value
+		historyLogged[key] = true
+		if d.Before(from) {
+			continue
 		}
 		daily[key] = value
 		logged[key] = true
@@ -131,7 +150,7 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 		data.ChartType = model.ChartLine
 	}
 
-	summary := buildSummary(from, to, span, kind, o, daily, logged, first, last)
+	summary := buildSummary(from, to, historyFrom, span, kind, o, daily, logged, historyDaily, historyLogged, first, last)
 	data.Summary = summary
 	data.Empty = len(daily) == 0
 
@@ -229,7 +248,7 @@ func buildBuckets(from, to time.Time, gran string, daily map[string]float64, log
 	return keys, values, present
 }
 
-func buildSummary(from, to time.Time, span int, kind string, o Options, daily map[string]float64, logged map[string]bool, first, last string) model.Summary {
+func buildSummary(from, to, historyFrom time.Time, span int, kind string, o Options, daily map[string]float64, logged map[string]bool, historyDaily map[string]float64, historyLogged map[string]bool, first, last string) model.Summary {
 	s := model.Summary{
 		Days:     span,
 		Unit:     o.Unit,
@@ -280,7 +299,7 @@ func buildSummary(from, to time.Time, span int, kind string, o Options, daily ma
 		s.CompletionRate = round2(float64(s.LoggedDays) / float64(span))
 	}
 
-	s.CurrentStreak, s.BestStreak = streaks(from, to, DateOnly(o.Today), kind, o.Goal, daily, logged)
+	s.CurrentStreak, s.BestStreak = streaks(historyFrom, from, to, DateOnly(o.Today), kind, o.Goal, historyDaily, historyLogged)
 	s.BestWeekday, s.BestWeekdayValue = bestWeekday(kind, daily, logged)
 
 	return s
@@ -307,36 +326,39 @@ func dayHit(kind string, goal *model.Goal, value float64, logged bool) bool {
 }
 
 func evaluatePeriods(from, to time.Time, goal *model.Goal, daily map[string]float64, logged map[string]bool) (total, completed int) {
+	// Only periods fully contained in [from, to] are scored. A week or month
+	// clipped by the range boundary only accumulated part of its days, and
+	// comparing that against a full-period goal would always look un-met.
+	starts := map[string]time.Time{}
+	ends := map[string]time.Time{}
 	totals := map[string]float64{}
+
 	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
-		key := d.Format(DayLayout)
-		if !logged[key] {
+		var start, end time.Time
+		if goal.Period == model.PeriodMonth {
+			start = firstOfMonth(d)
+			end = start.AddDate(0, 1, -1)
+		} else {
+			start = startOfWeek(d)
+			end = start.AddDate(0, 0, 6)
+		}
+		key := start.Format(DayLayout)
+		starts[key] = start
+		ends[key] = end
+
+		dayKey := d.Format(DayLayout)
+		if !logged[dayKey] {
 			continue
 		}
-		var periodKey string
-		if goal.Period == model.PeriodMonth {
-			periodKey = firstOfMonth(d).Format(DayLayout)
-		} else {
-			periodKey = startOfWeek(d).Format(DayLayout)
-		}
-		totals[periodKey] += daily[key]
+		totals[key] += daily[dayKey]
 	}
 
-	// Count every period that intersects the range, even with no records.
-	seen := map[string]bool{}
-	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
-		var periodKey string
-		if goal.Period == model.PeriodMonth {
-			periodKey = firstOfMonth(d).Format(DayLayout)
-		} else {
-			periodKey = startOfWeek(d).Format(DayLayout)
-		}
-		if seen[periodKey] {
+	for key, start := range starts {
+		if start.Before(from) || ends[key].After(to) {
 			continue
 		}
-		seen[periodKey] = true
 		total++
-		v := totals[periodKey]
+		v := totals[key]
 		switch goal.Type {
 		case model.GoalAtLeast:
 			if v >= goal.Value {
@@ -351,8 +373,12 @@ func evaluatePeriods(from, to time.Time, goal *model.Goal, daily map[string]floa
 	return total, completed
 }
 
-func streaks(from, to, today time.Time, kind string, goal *model.Goal, daily map[string]float64, logged map[string]bool) (current, best int) {
-	// Best streak across the whole requested range.
+// streaks returns the current and best streak. Best streak stays scoped to the
+// requested [from, to] chart range; the current streak walks back through the
+// extended history (historyFrom), so a long run is not truncated by the visible
+// window.
+func streaks(historyFrom, from, to, today time.Time, kind string, goal *model.Goal, daily map[string]float64, logged map[string]bool) (current, best int) {
+	// Best streak across the requested range.
 	run := 0
 	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
 		key := d.Format(DayLayout)
@@ -371,13 +397,13 @@ func streaks(from, to, today time.Time, kind string, goal *model.Goal, daily map
 	if today.Before(anchor) {
 		anchor = today
 	}
-	if anchor.Before(from) {
+	if anchor.Before(historyFrom) {
 		return 0, best
 	}
 	if !logged[anchor.Format(DayLayout)] && anchor.Equal(today) {
 		anchor = anchor.AddDate(0, 0, -1)
 	}
-	for d := anchor; !d.Before(from); d = d.AddDate(0, 0, -1) {
+	for d := anchor; !d.Before(historyFrom); d = d.AddDate(0, 0, -1) {
 		key := d.Format(DayLayout)
 		if dayHit(kind, goal, daily[key], logged[key]) {
 			current++

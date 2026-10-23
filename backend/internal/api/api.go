@@ -36,6 +36,19 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 	}
 
 	r := gin.New()
+	// Trust no proxy by default: otherwise any client can spoof
+	// X-Forwarded-For and slip past the per-IP auth rate limiter. Behind a
+	// reverse proxy the operator lists its addresses in TRUSTED_PROXIES.
+	if len(cfg.TrustedProxies) == 0 {
+		if err := r.SetTrustedProxies(nil); err != nil {
+			log.Printf("WARN: could not disable trusted proxies: %v", err)
+		}
+	} else if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		log.Printf("WARN: invalid TRUSTED_PROXIES %v: %v (trusting no proxy)", cfg.TrustedProxies, err)
+		if err := r.SetTrustedProxies(nil); err != nil {
+			log.Printf("WARN: could not disable trusted proxies: %v", err)
+		}
+	}
 	r.RedirectTrailingSlash = false
 	r.Use(gin.Logger(), gin.Recovery(), securityHeaders(), cors(cfg.CORSOrigins), limitBody())
 
@@ -193,12 +206,20 @@ func (a *API) requireAuth() gin.HandlerFunc {
 			return
 		}
 
-		uid, err := auth.ParseToken(a.cfg.JWTSecret, token)
+		uid, ver, err := auth.ParseToken(a.cfg.JWTSecret, token)
 		if err != nil {
 			fail(c, http.StatusUnauthorized, "your session has expired, please sign in again")
 			return
 		}
-		if _, err := a.store.UserByID(c.Request.Context(), uid); err != nil {
+		user, err := a.store.UserByID(c.Request.Context(), uid)
+		if err != nil {
+			a.clearSession(c)
+			fail(c, http.StatusUnauthorized, "your session has expired, please sign in again")
+			return
+		}
+		// Changing the password bumps token_version, which invalidates every
+		// session issued before the change.
+		if user.TokenVersion != ver {
 			a.clearSession(c)
 			fail(c, http.StatusUnauthorized, "your session has expired, please sign in again")
 			return

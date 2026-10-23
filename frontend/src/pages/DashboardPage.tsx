@@ -14,6 +14,7 @@ import { DashboardGrid } from '../components/dashboard/DashboardGrid'
 import { WidgetFormModal } from '../components/dashboard/WidgetFormModal'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Modal } from '../components/ui/Modal'
 import { Spinner } from '../components/ui/Spinner'
 import { useToast } from '../components/ui/Toast'
@@ -33,7 +34,7 @@ export function DashboardPage() {
   const mobile = useMediaQuery('(max-width: 1023px)')
   const today = todayKey()
 
-  const { data: dashboards = [], isLoading } = useDashboards()
+  const { data: dashboards = [], isLoading, isError, error, refetch, isFetching } = useDashboards()
   const { data: trackers = [] } = useTrackers(false)
 
   const [editing, setEditing] = useState(false)
@@ -50,7 +51,14 @@ export function DashboardPage() {
     dashboards.find((dashboard) => dashboard.isDefault) ??
     dashboards[0]
 
-  const { data: dashboardData, isLoading: dataLoading } = useDashboardData(active?.id, today)
+  const {
+    data: dashboardData,
+    isLoading: dataLoading,
+    isError: dataError,
+    error: dataErrorValue,
+    refetch: refetchData,
+    isFetching: dataFetching,
+  } = useDashboardData(active?.id, today)
 
   useEffect(() => {
     if (!dashboardId && active) navigate(`/dashboard/${active.id}`, { replace: true })
@@ -114,8 +122,30 @@ export function DashboardPage() {
     setNameModal(null)
   }
 
-  if (isLoading || !active) {
+  if (isLoading) {
     return <Spinner label="Loading dashboards…" />
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        title="Couldn't load your dashboards"
+        description={errorMessage(error)}
+        onRetry={() => void refetch()}
+        retrying={isFetching}
+      />
+    )
+  }
+
+  if (!active) {
+    return (
+      <ErrorState
+        title="No dashboards yet"
+        description="Your account has no dashboards. Try again, or create one from the menu on any dashboard."
+        onRetry={() => void refetch()}
+        retrying={isFetching}
+      />
+    )
   }
 
   const widgets = active.widgets
@@ -259,16 +289,32 @@ export function DashboardPage() {
           }
         />
       ) : (
-        <DashboardGrid
-          dashboard={active}
-          data={dashboardData?.widgets}
-          loading={dataLoading}
-          editing={editing}
-          mobile={mobile}
-          trackers={trackers}
-          onEditWidget={(widget) => setWidgetModal({ open: true, widget })}
-          onDeleteWidget={setDeletingWidget}
-        />
+        <div className="space-y-4">
+          {dataError && (
+            <div role="alert" className="alert alert-error alert-soft flex flex-wrap items-center gap-3 py-2 text-sm">
+              <span className="flex-1">Couldn't load chart data. {errorMessage(dataErrorValue)}</span>
+              <button
+                type="button"
+                className="btn btn-xs btn-outline"
+                onClick={() => void refetchData()}
+                disabled={dataFetching}
+              >
+                {dataFetching && <span className="loading loading-spinner loading-xs" />}
+                Retry
+              </button>
+            </div>
+          )}
+          <DashboardGrid
+            dashboard={active}
+            data={dashboardData?.widgets}
+            loading={dataLoading}
+            editing={editing}
+            mobile={mobile}
+            trackers={trackers}
+            onEditWidget={(widget) => setWidgetModal({ open: true, widget })}
+            onDeleteWidget={setDeletingWidget}
+          />
+        </div>
       )}
 
       {widgetModal.open && (

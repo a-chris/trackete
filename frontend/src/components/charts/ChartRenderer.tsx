@@ -8,7 +8,7 @@ import {
   buildSparklineOptions,
 } from '../../lib/chartOptions'
 import { formatValue } from '../../lib/format'
-import { ChartColumn } from 'lucide-react'
+import { ChartColumn, TriangleAlert } from 'lucide-react'
 
 interface ChartRendererProps {
   data: ChartData | undefined
@@ -20,7 +20,19 @@ interface ChartRendererProps {
 export function ChartRenderer({ data, kind, unit = '', color = '#6366f1' }: ChartRendererProps) {
   const theme = useChartTheme()
 
-  if (!data || data.empty) {
+  if (data === undefined) {
+    return (
+      <div
+        role="alert"
+        className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/40"
+      >
+        <TriangleAlert className="size-6" />
+        <p className="text-xs">Couldn't load chart data.</p>
+      </div>
+    )
+  }
+
+  if (data.empty) {
     return (
       <div className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/40">
         <ChartColumn className="size-6" />
