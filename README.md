@@ -50,12 +50,12 @@ docker run -d --name trackete \
 
 ### From source
 
-Requirements: Go 1.27+ and Node 24+. [mise](https://mise.jdx.dev) reads
+Requirements: Go 1.27+ and Bun 1.4+. [mise](https://mise.jdx.dev) reads
 `.mise.toml` and installs both.
 
 ```bash
 mise install
-make install                  # npm ci
+make install                  # bun install
 make build                    # frontend/dist + backend/trackete
 STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 ```

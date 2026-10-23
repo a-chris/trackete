@@ -5,12 +5,12 @@ and SQLite in a single container.
 
 ## Development setup
 
-Requirements: Go 1.27+, Node 24+. [mise](https://mise.jdx.dev) reads `.mise.toml`
+Requirements: Go 1.27+, Bun 1.4+. [mise](https://mise.jdx.dev) reads `.mise.toml`
 and installs both.
 
 ```bash
 mise install
-make install        # npm ci
+make install        # bun install
 make dev            # API on :8080 (Air live reload), Vite on :5173
 ```
 

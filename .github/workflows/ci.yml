@@ -30,20 +30,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          bun-version: "1.4.4"
       - name: Install
         working-directory: frontend
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Lint
         working-directory: frontend
-        run: npm run lint
+        run: bun --bun run lint
       - name: Typecheck and build
         working-directory: frontend
-        run: npm run build
+        run: bun --bun run build
 
   image:
     name: Docker image
