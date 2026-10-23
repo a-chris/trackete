@@ -27,9 +27,11 @@ function systemPrefersDark(): boolean {
   }
 }
 
-const storedTheme = readStoredTheme()
+const storedRaw = readStoredTheme()
+const storedTheme =
+  storedRaw === 'light' || storedRaw === 'dark' || storedRaw === 'system' ? storedRaw : 'system'
 const prefersDark = systemPrefersDark()
-const dark = storedTheme === 'dark' || ((storedTheme === 'system' || storedTheme === null) && prefersDark)
+const dark = storedTheme === 'dark' || (storedTheme === 'system' && prefersDark)
 document.documentElement.dataset.theme = dark ? 'trackete-dark' : 'trackete-light'
 
 const queryClient = new QueryClient({
