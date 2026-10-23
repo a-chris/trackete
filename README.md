@@ -2,43 +2,40 @@
 
 **Track anything. Build the dashboard you actually want.**
 
-Trackete is a small, self-hosted generalist tracker. Create a yes/no habit or a
-number with a unit — beers per week, weight, meditation, pages read — log it in
-seconds, then arrange charts on a dashboard that is yours.
+Trackete is a self-hosted generalist tracker. Create a yes/no habit or a number
+with a unit — beers, weight, meditation, pages read — log it in seconds, then
+arrange charts on a dashboard that is yours. One container, one SQLite file, no
+external services.
 
-Think "spreadsheet freedom, dashboard opinions". One container, one SQLite file,
-no external services.
+![Trackete dashboard in dark mode](docs/screenshots/dashboard-dark.png)
 
+## What you get
+
+- **Yes/No and Number trackers**, each with an optional goal (`at least` / `at
+  most`, per day, week or month).
+- **One value per day**, quick steppers, and a detail view for editing history.
+- **Six chart types** — line, bar, area, donut, calendar heatmap, stat card.
+- **Drag-and-resize dashboards**, multiple dashboards, live statistics
+  (streaks, completion, strongest weekday, on-target periods).
+- **Multi-user accounts** with per-user data isolation, light/dark themes.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data model, chart
+semantics and API.
+
+## Quick start (Docker Compose)
+
+```bash
+git clone https://github.com/a-chris/trackete.git
+cd trackete
+cp .env.example .env          # then set JWT_SECRET in .env
+docker compose up -d --build
 ```
-Go + Gin + SQLite  ·  React + Vite + ApexCharts + DaisyUI + Tailwind
-```
 
-## Features
+Open <http://localhost:8080> and create an account.
 
-- **Two tracker types** — `Yes / No` habits and `Number` trackers with an
-  optional unit and a target (`at least` / `at most`, per day, week or month).
-- **Fast daily logging** — one value per day, `UPSERT` semantics, quick
-  steppers on the Today screen.
-- **Six chart types** — line, bar, area, donut, calendar heatmap and a
-  headline stat card with sparkline.
-- **Drag-and-resize dashboards** — a 12-column grid, multiple named dashboards, and
-  add/edit/delete widgets in place.
-- **Real statistics** — totals, per-day averages, completion rate, current and
-  best streak, strongest weekday, on-target periods.
-- **Multi-user** — email + password accounts, every tracker and dashboard scoped
-  to its owner. Registration can be closed with an env var.
-- **Light and dark themes**, following the system by default.
-- **One-line deployment** with Docker, data in a single volume.
+### Prebuilt image (one-liner)
 
-## Screenshots
-
-| Dashboard | Tracker detail |
-| --- | --- |
-| ![Dashboard in dark mode](docs/screenshots/dashboard-dark.png) | ![Tracker detail with line chart](docs/screenshots/tracker-detail-dark.png) |
-
-![Mobile dashboard](docs/screenshots/mobile-dark.png)
-
-## Quick start
+Release tags publish a multi-arch image to GHCR:
 
 ```bash
 docker run -d --name trackete \
@@ -48,138 +45,77 @@ docker run -d --name trackete \
   ghcr.io/a-chris/trackete:latest
 ```
 
-Open <http://localhost:8080>, create an account, and add your first tracker.
-
-> The image is published to GHCR by the release workflow. Until a release tag
-> exists, build it yourself (below) — it is a two-minute build.
-
-### With Docker Compose
-
-```bash
-git clone https://github.com/a-chris/trackete.git
-cd trackete
-cp .env.example .env          # then set JWT_SECRET
-docker compose up -d --build
-```
+> Until a `v*` tag has been pushed, use the Compose or source build below; the
+> release workflow (`.github/workflows/release.yml`) creates the image.
 
 ### From source
 
+Requirements: Go 1.27+ and Node 24+. [mise](https://mise.jdx.dev) reads
+`.mise.toml` and installs both.
+
 ```bash
-mise install                  # Go 1.27 and Node 24
-make install
+mise install
+make install                  # npm ci
 make build                    # frontend/dist + backend/trackete
 STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 ```
 
-## Configuration
+## Critical configuration
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `8080` | HTTP port. |
-| `DB_PATH` | `/data/trackete.db` (Docker) | SQLite file. The directory is created if missing. |
-| `JWT_SECRET` | random per boot | Signing key for session cookies. Set it to keep sessions across restarts. |
-| `TOKEN_TTL` | `720h` | Session lifetime, any Go duration. |
-| `ALLOW_REGISTRATION` | `true` | Set `false` to close sign-ups after creating your accounts. |
-| `STATIC_DIR` | `/app/dist` (Docker) | Directory with the built frontend. Empty means API-only. |
-| `CORS_ORIGINS` | empty | Comma-separated extra origins allowed with credentials. Only needed for cross-origin dev. |
-| `APP_VERSION` | `dev` | Reported by `/api/health` and the Settings screen. |
+| Variable | Why it matters |
+| --- | --- |
+| `JWT_SECRET` | **Set this.** Signs session cookies. If unset, a random secret is generated per boot and everyone is logged out on restart. Use `openssl rand -hex 32`. |
+| `TRUSTED_PROXIES` | **Set this when behind a reverse proxy** (comma-separated IPs/CIDRs). Empty means no proxy is trusted, so forwarded headers are ignored and `Secure` cookies plus per-IP login throttling would key on the proxy. |
+| `ALLOW_REGISTRATION` | Defaults to `true`. Set `false` once your accounts exist. |
+| `TOKEN_TTL` | Session lifetime, default `720h` (30 days). |
+| `DB_PATH` / volume | Everything lives in the SQLite file (Docker: `/data/trackete.db`). Mount a persistent volume. |
+| `PORT` | HTTP port, default `8080`. |
+| `STATIC_DIR` | Built SPA directory. Empty = API only (Docker sets `/app/dist`). |
+| `CORS_ORIGINS` | Comma-separated extra origins for credentialed requests. Only for cross-origin development; wildcards are ignored. |
 
-## How it works
+## Running behind HTTPS
 
-### Data model
+Terminate TLS at your reverse proxy, forward `X-Forwarded-Proto: https`, and list
+the proxy in `TRUSTED_PROXIES`. Cookies then become `Secure` automatically.
 
-- `users` — one row per account.
-- `trackers` — name, icon, colour, `kind` (`boolean` / `numeric`), optional unit
-  and goal. Goals are stored as JSON: `{type, value, period}`.
-- `entries` — **one value per tracker per day** (`PRIMARY KEY (tracker_id, day)`).
-  Days are local calendar dates (`YYYY-MM-DD`) picked by the browser, so no
-  timezone surprises. Logging again replaces the value.
-- `dashboards` / `widgets` — a widget points at one tracker, a chart type, a
-  config (`range`, `granularity`, `aggregate`, `metric`) and a grid position.
+Caddy example:
 
-### Chart data
+```
+trackete.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+```
 
-The API returns chart-ready payloads (`labels`, `series`, optional `heatmap` /
-`stat`, plus a `summary`). Aggregation happens server-side and is pure Go
-(`backend/internal/analytics`), so the numbers are identical everywhere:
+With Compose, bind the port to loopback only: `ports: ["127.0.0.1:8080:8080"]`
+and put the proxy in front. Set `TRUSTED_PROXIES=127.0.0.1/32` (or the proxy's
+Docker network) so forwarded headers are honored.
 
-- `boolean` trackers chart as 1/0 per day and as *days on* per week/month.
-- `numeric` trackers aggregate with either **sum** or **average over logged
-  days** — missing days never dilute an average.
-- Missing days count as 0 for streaks and per-period goals.
-- Streaks are computed on "did I hit the target that day" (for numeric trackers
-  without a daily goal: any value above 0).
+SQLite runs in WAL mode: to back up, archive the whole volume while the container
+is stopped (or use `sqlite3 .backup`).
 
-### API
-
-All routes are under `/api`. Authentication uses a session cookie (an
-`Authorization: Bearer <token>` header also works for API clients).
-
-| Method | Route | Purpose |
-| --- | --- | --- |
-| `GET` | `/health`, `/meta` | Health check, version, registration flag. |
-| `POST` | `/auth/register`, `/auth/login`, `/auth/logout` | Session lifecycle. |
-| `GET/PATCH` | `/auth/me` | Current profile. |
-| `POST` | `/auth/password` | Change password. |
-| `GET/POST` | `/trackers` | List (`?includeArchived=true`) and create. |
-| `GET/PUT/DELETE` | `/trackers/:id` | Read, replace, delete. |
-| `GET` | `/trackers/:id/data` | Chart payload (`?chart=&from=&to=&granularity=&aggregate=&metric=`). |
-| `GET/PUT/DELETE` | `/trackers/:id/entries[/:day]` | Read, upsert, delete entries. |
-| `GET` | `/overview` | Today's screen: per-tracker entry, period total, streak. |
-| `GET/POST` | `/dashboards` | List and create dashboards. |
-| `GET/PATCH/DELETE` | `/dashboards/:id` | Read, rename, delete. |
-| `GET` | `/dashboards/:id/data` | Chart payloads for every widget. |
-| `POST` | `/dashboards/:id/widgets` | Add a chart. |
-| `PUT/DELETE` | `/widgets/:id` | Update or remove a chart. |
-| `PUT` | `/dashboards/:id/layout` | Persist drag/resize positions. |
+```bash
+docker run --rm -v trackete-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/trackete-backup.tar.gz -C /data .
+```
 
 ## Development
 
 ```bash
-make dev        # Go API on :8080 + Vite on :5173
+make dev        # Go API :8080 + Vite :5173 (proxied, cookies stay same-origin)
 make test       # Go vet/tests, TypeScript, ESLint, production build
-make docker-build
 ```
 
-Repository layout:
+Layout: `backend/` (Go API, SQLite store, embedded migrations, analytics) and
+`frontend/` (React, DaisyUI themes, ApexCharts, dashboard grid).
 
-```
-backend/   Go API, SQLite store, embedded migrations, analytics
-frontend/  React app, DaisyUI themes, ApexCharts wrappers, dashboard grid
-Dockerfile multi-stage build → one Alpine image serving API + static SPA
-```
+## Notes
 
-## Deployment notes
+- Trackete logs one value per tracker per day; multiple entries per day and
+  entry variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
+- Charts render at most ten years of history; stored rows are never deleted.
+- Registration can be closed; duplicate-email responses reveal that an account
+  exists (intentional for a self-hosted install — close registration after
+  setup).
 
-- Put Trackete behind a reverse proxy with TLS. Forward `X-Forwarded-Proto`, and
-  session cookies automatically become `Secure`.
-- Back up the `trackete-data` volume:
-
-  ```bash
-  docker run --rm -v trackete-data:/data -v "$PWD":/backup alpine \
-    tar czf /backup/trackete-backup.tar.gz -C /data .
-  ```
-
-- The database runs in WAL mode, so back up the directory, not just the `.db`.
-- Single container, single writer-friendly SQLite: perfect for personal use and
-  small groups. For heavy multi-tenant loads, the storage layer is isolated
-  behind `internal/store` and can be swapped.
-
-## Roadmap
-
-The schema and the analytics package are built to grow:
-
-- multiple entries per day (doses, meals, sets) with per-entry metadata
-- quick variants/tags on entries ("hot beer" vs "cold beer") and distribution charts
-- free-text notes in charts and a searchable journal
-- more widgets: stacked bars, scatter, radial, tables, multi-tracker charts
-- pattern detection ("you drink most on Saturdays") surfaced as insights
-- CSV/JSON import and export
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security policy in [SECURITY.md](SECURITY.md).
-
-## License
-
-[MIT](LICENSE)
+Security policy: [SECURITY.md](SECURITY.md). Contributions:
+[CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).
