@@ -74,9 +74,6 @@ export function AppShell() {
                 <LogOut className="size-4" />
               </button>
             </div>
-            <div className="mt-3">
-              <ThemeToggle iconsOnly />
-            </div>
           </div>
         </div>
       </aside>

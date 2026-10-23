@@ -8,7 +8,7 @@ const options: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
   { mode: 'system', label: 'System', icon: Monitor },
 ]
 
-export function ThemeToggle({ compact = false, iconsOnly = false }: { compact?: boolean; iconsOnly?: boolean }) {
+export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { mode, setMode } = useTheme()
 
   if (compact) {
@@ -33,14 +33,14 @@ export function ThemeToggle({ compact = false, iconsOnly = false }: { compact?: 
         <button
           key={value}
           type="button"
-          className={`btn btn-sm join-item ${iconsOnly ? 'btn-square' : ''} ${mode === value ? 'btn-active' : ''}`}
+          className={`btn btn-sm join-item ${mode === value ? 'btn-active' : ''}`}
           onClick={() => setMode(value)}
           aria-pressed={mode === value}
           aria-label={label}
           title={label}
         >
           <Icon className="size-4" />
-          {!iconsOnly && <span>{label}</span>}
+          <span>{label}</span>
         </button>
       ))}
     </div>
