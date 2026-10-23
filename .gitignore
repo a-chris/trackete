@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+frontend/dist/
+backend/trackete
+backend/coverage.out
+
+# local data
+data/
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# env & local tooling
+.env
+.env.local
+.DS_Store
+*.log
+
+# editors
+.idea/
+.vscode/

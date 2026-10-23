@@ -1,0 +1,189 @@
+package model
+
+import "time"
+
+const (
+	KindBoolean = "boolean"
+	KindNumeric = "numeric"
+
+	GoalAtLeast = "at_least"
+	GoalAtMost  = "at_most"
+
+	PeriodDay   = "day"
+	PeriodWeek  = "week"
+	PeriodMonth = "month"
+
+	ChartLine    = "line"
+	ChartBar     = "bar"
+	ChartArea    = "area"
+	ChartDonut   = "donut"
+	ChartHeatmap = "heatmap"
+	ChartStat    = "stat"
+)
+
+// ChartTypes lists the widget/chart types the UI can render.
+var ChartTypes = []string{ChartLine, ChartBar, ChartArea, ChartDonut, ChartHeatmap, ChartStat}
+
+func ValidChartType(v string) bool {
+	for _, t := range ChartTypes {
+		if t == v {
+			return true
+		}
+	}
+	return false
+}
+
+// Goal is an optional target attached to a tracker.
+type Goal struct {
+	Type   string  `json:"type"`   // at_least | at_most
+	Value  float64 `json:"value"`  // target amount per period
+	Period string  `json:"period"` // day | week | month
+}
+
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type Tracker struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Icon        string    `json:"icon"`
+	Color       string    `json:"color"`
+	Kind        string    `json:"kind"`
+	Unit        string    `json:"unit"`
+	Goal        *Goal     `json:"goal"`
+	Archived    bool      `json:"archived"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+// Entry is one logged day for a tracker. Days are local calendar dates in the
+// user's timezone, stored as YYYY-MM-DD.
+type Entry struct {
+	TrackerID string    `json:"trackerId,omitempty"`
+	Day       string    `json:"day"`
+	Value     float64   `json:"value"`
+	Note      string    `json:"note"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// WidgetConfig controls how a widget aggregates and renders its tracker.
+type WidgetConfig struct {
+	Range       string `json:"range"`       // 7d | 30d | 90d | 365d | all
+	Granularity string `json:"granularity"` // auto | day | week | month
+	Aggregate   string `json:"aggregate"`   // sum | avg
+	Metric      string `json:"metric"`      // total | average | count | streak
+	ShowGoal    bool   `json:"showGoal"`
+}
+
+func DefaultWidgetConfig() WidgetConfig {
+	return WidgetConfig{
+		Range:       "30d",
+		Granularity: "auto",
+		Aggregate:   "sum",
+		Metric:      "total",
+		ShowGoal:    true,
+	}
+}
+
+type LayoutItem struct {
+	ID string `json:"id"`
+	X  int    `json:"x"`
+	Y  int    `json:"y"`
+	W  int    `json:"w"`
+	H  int    `json:"h"`
+}
+
+type Widget struct {
+	ID          string       `json:"id"`
+	DashboardID string       `json:"dashboardId"`
+	TrackerID   string       `json:"trackerId"`
+	Title       string       `json:"title"`
+	ChartType   string       `json:"chartType"`
+	Config      WidgetConfig `json:"config"`
+	Layout      LayoutItem   `json:"layout"`
+	CreatedAt   time.Time    `json:"createdAt"`
+	UpdatedAt   time.Time    `json:"updatedAt"`
+}
+
+type Dashboard struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	IsDefault bool      `json:"isDefault"`
+	Widgets   []Widget  `json:"widgets"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// Series is one chart series (ApexCharts-shaped).
+type Series struct {
+	Name string    `json:"name"`
+	Data []float64 `json:"data"`
+}
+
+type HeatRow struct {
+	Name string    `json:"name"`
+	Data []float64 `json:"data"`
+}
+
+type Heatmap struct {
+	Columns []string  `json:"columns"`
+	Rows    []HeatRow `json:"rows"`
+}
+
+type Stat struct {
+	Value       float64   `json:"value"`
+	Label       string    `json:"label"`
+	Spark       []float64 `json:"spark"`
+	SparkLabels []string  `json:"sparkLabels"`
+}
+
+type Summary struct {
+	Days             int     `json:"days"`
+	LoggedDays       int     `json:"loggedDays"`
+	Total            float64 `json:"total"`
+	Average          float64 `json:"average"`
+	Min              float64 `json:"min"`
+	Max              float64 `json:"max"`
+	CompletionRate   float64 `json:"completionRate"`
+	CurrentStreak    int     `json:"currentStreak"`
+	BestStreak       int     `json:"bestStreak"`
+	BestWeekday      string  `json:"bestWeekday"`
+	BestWeekdayValue float64 `json:"bestWeekdayValue"`
+	PeriodsCompleted int     `json:"periodsCompleted"`
+	PeriodsTotal     int     `json:"periodsTotal"`
+	Unit             string  `json:"unit"`
+	Kind             string  `json:"kind"`
+	Goal             *Goal   `json:"goal"`
+	FirstDay         string  `json:"firstDay"`
+	LastDay          string  `json:"lastDay"`
+}
+
+// ChartData is the single payload every chart widget understands.
+type ChartData struct {
+	ChartType   string   `json:"chartType"`
+	Granularity string   `json:"granularity"`
+	Labels      []string `json:"labels"`
+	Series      []Series `json:"series"`
+	Heatmap     *Heatmap `json:"heatmap,omitempty"`
+	Stat        *Stat    `json:"stat,omitempty"`
+	Summary     Summary  `json:"summary"`
+	Empty       bool     `json:"empty"`
+}
+
+// OverviewItem feeds the "Today" screen.
+type OverviewItem struct {
+	Tracker      Tracker  `json:"tracker"`
+	Entry        *Entry   `json:"entry"`
+	PeriodTotal  float64  `json:"periodTotal"`
+	PeriodLogged int      `json:"periodLogged"`
+	PeriodTarget *float64 `json:"periodTarget"`
+	GoalMet      *bool    `json:"goalMet"`
+	Streak       int      `json:"streak"`
+	LastValue    *float64 `json:"lastValue"`
+	LastLogged   string   `json:"lastLoggedDay"`
+}

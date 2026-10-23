@@ -1,0 +1,308 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"strings"
+
+	"github.com/a-chris/trackete/backend/internal/model"
+)
+
+const widgetColumns = `id, dashboard_id, COALESCE(tracker_id, ''), title, chart_type, config, pos_x, pos_y, width, height, created_at, updated_at`
+
+func (s *Store) ensureDefaultDashboard(ctx context.Context, userID string) (*model.Dashboard, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(1) FROM dashboards WHERE user_id = ?`, userID).Scan(&count); err != nil {
+		return nil, err
+	}
+	if count > 0 {
+		return nil, nil
+	}
+	return s.CreateDashboard(ctx, userID, "My dashboard")
+}
+
+// EnsureDefaultDashboard creates the first dashboard for a user, if any.
+func (s *Store) EnsureDefaultDashboard(ctx context.Context, userID string) error {
+	_, err := s.ensureDefaultDashboard(ctx, userID)
+	return err
+}
+
+func (s *Store) ListDashboards(ctx context.Context, userID string) ([]model.Dashboard, error) {
+	if err := s.EnsureDefaultDashboard(ctx, userID); err != nil {
+		return nil, err
+	}
+
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, name, is_default, created_at, updated_at FROM dashboards
+		 WHERE user_id = ? ORDER BY is_default DESC, created_at ASC`, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]model.Dashboard, 0, 4)
+	for rows.Next() {
+		var (
+			d         model.Dashboard
+			isDefault int
+			createdAt string
+			updatedAt string
+		)
+		if err := rows.Scan(&d.ID, &d.Name, &isDefault, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		d.IsDefault = isDefault == 1
+		d.CreatedAt = parseTime(createdAt)
+		d.UpdatedAt = parseTime(updatedAt)
+		out = append(out, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for i := range out {
+		widgets, err := s.ListWidgets(ctx, out[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		out[i].Widgets = widgets
+	}
+	return out, nil
+}
+
+func (s *Store) GetDashboard(ctx context.Context, userID, id string) (*model.Dashboard, error) {
+	var (
+		d         model.Dashboard
+		isDefault int
+		createdAt string
+		updatedAt string
+	)
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, name, is_default, created_at, updated_at FROM dashboards WHERE id = ? AND user_id = ?`,
+		id, userID,
+	).Scan(&d.ID, &d.Name, &isDefault, &createdAt, &updatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	d.IsDefault = isDefault == 1
+	d.CreatedAt = parseTime(createdAt)
+	d.UpdatedAt = parseTime(updatedAt)
+	widgets, err := s.ListWidgets(ctx, d.ID)
+	if err != nil {
+		return nil, err
+	}
+	d.Widgets = widgets
+	return &d, nil
+}
+
+func (s *Store) CreateDashboard(ctx context.Context, userID, name string) (*model.Dashboard, error) {
+	var count int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(1) FROM dashboards WHERE user_id = ?`, userID).Scan(&count); err != nil {
+		return nil, err
+	}
+	isDefault := 0
+	if count == 0 {
+		isDefault = 1
+	}
+	ts := formatTime(now())
+	id := newID()
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO dashboards (id, user_id, name, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		id, userID, strings.TrimSpace(name), isDefault, ts, ts,
+	); err != nil {
+		return nil, err
+	}
+	return s.GetDashboard(ctx, userID, id)
+}
+
+func (s *Store) RenameDashboard(ctx context.Context, userID, id, name string) (*model.Dashboard, error) {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE dashboards SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+		strings.TrimSpace(name), formatTime(now()), id, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectOne(res); err != nil {
+		return nil, err
+	}
+	return s.GetDashboard(ctx, userID, id)
+}
+
+func (s *Store) DeleteDashboard(ctx context.Context, userID, id string) error {
+	var isDefault int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT is_default FROM dashboards WHERE id = ? AND user_id = ?`, id, userID,
+	).Scan(&isDefault)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM dashboards WHERE id = ? AND user_id = ?`, id, userID); err != nil {
+		return err
+	}
+	if isDefault == 1 {
+		_, _ = s.db.ExecContext(ctx,
+			`UPDATE dashboards SET is_default = 1 WHERE id = (
+			   SELECT id FROM dashboards WHERE user_id = ? ORDER BY created_at ASC LIMIT 1
+			 )`, userID,
+		)
+	}
+	return nil
+}
+
+func scanWidget(scanner interface{ Scan(...any) error }) (*model.Widget, error) {
+	var (
+		w                    model.Widget
+		rawConfig            string
+		createdAt, updatedAt string
+	)
+	if err := scanner.Scan(
+		&w.ID, &w.DashboardID, &w.TrackerID, &w.Title, &w.ChartType, &rawConfig,
+		&w.Layout.X, &w.Layout.Y, &w.Layout.W, &w.Layout.H, &createdAt, &updatedAt,
+	); err != nil {
+		return nil, err
+	}
+	cfg := model.DefaultWidgetConfig()
+	if err := json.Unmarshal([]byte(rawConfig), &cfg); err == nil {
+		w.Config = cfg
+	} else {
+		w.Config = model.DefaultWidgetConfig()
+	}
+	w.Layout.ID = w.ID
+	w.CreatedAt = parseTime(createdAt)
+	w.UpdatedAt = parseTime(updatedAt)
+	return &w, nil
+}
+
+func (s *Store) ListWidgets(ctx context.Context, dashboardID string) ([]model.Widget, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT `+widgetColumns+` FROM widgets WHERE dashboard_id = ? ORDER BY pos_y ASC, pos_x ASC`, dashboardID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]model.Widget, 0, 8)
+	for rows.Next() {
+		w, err := scanWidget(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *w)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) GetWidget(ctx context.Context, userID, widgetID string) (*model.Widget, error) {
+	row := s.db.QueryRowContext(ctx,
+		`SELECT `+widgetColumns+` FROM widgets
+		 WHERE id = ? AND dashboard_id IN (SELECT id FROM dashboards WHERE user_id = ?)`,
+		widgetID, userID,
+	)
+	w, err := scanWidget(row)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return w, nil
+}
+
+func (s *Store) ownsDashboard(ctx context.Context, userID, dashboardID string) error {
+	var count int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM dashboards WHERE id = ? AND user_id = ?`, dashboardID, userID,
+	).Scan(&count); err != nil {
+		return err
+	}
+	if count == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *Store) CreateWidget(ctx context.Context, userID string, w *model.Widget) (*model.Widget, error) {
+	if err := s.ownsDashboard(ctx, userID, w.DashboardID); err != nil {
+		return nil, err
+	}
+	cfg, err := json.Marshal(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	ts := formatTime(now())
+	w.ID = newID()
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO widgets (id, dashboard_id, tracker_id, title, chart_type, config, pos_x, pos_y, width, height, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		w.ID, w.DashboardID, w.TrackerID, w.Title, w.ChartType, string(cfg),
+		w.Layout.X, w.Layout.Y, w.Layout.W, w.Layout.H, ts, ts,
+	); err != nil {
+		return nil, err
+	}
+	return s.GetWidget(ctx, userID, w.ID)
+}
+
+func (s *Store) UpdateWidget(ctx context.Context, userID string, w *model.Widget) (*model.Widget, error) {
+	cfg, err := json.Marshal(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE widgets SET tracker_id = ?, title = ?, chart_type = ?, config = ?, pos_x = ?, pos_y = ?, width = ?, height = ?, updated_at = ?
+		 WHERE id = ? AND dashboard_id IN (SELECT id FROM dashboards WHERE user_id = ?)`,
+		w.TrackerID, w.Title, w.ChartType, string(cfg),
+		w.Layout.X, w.Layout.Y, w.Layout.W, w.Layout.H, formatTime(now()),
+		w.ID, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectOne(res); err != nil {
+		return nil, err
+	}
+	return s.GetWidget(ctx, userID, w.ID)
+}
+
+func (s *Store) DeleteWidget(ctx context.Context, userID, widgetID string) error {
+	res, err := s.db.ExecContext(ctx,
+		`DELETE FROM widgets WHERE id = ? AND dashboard_id IN (SELECT id FROM dashboards WHERE user_id = ?)`,
+		widgetID, userID,
+	)
+	if err != nil {
+		return err
+	}
+	return expectOne(res)
+}
+
+func (s *Store) UpdateLayouts(ctx context.Context, userID, dashboardID string, items []model.LayoutItem) error {
+	if err := s.ownsDashboard(ctx, userID, dashboardID); err != nil {
+		return err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	ts := formatTime(now())
+	for _, item := range items {
+		if _, err := tx.Exec(
+			`UPDATE widgets SET pos_x = ?, pos_y = ?, width = ?, height = ?, updated_at = ?
+			 WHERE id = ? AND dashboard_id = ?`,
+			item.X, item.Y, item.W, item.H, ts, item.ID, dashboardID,
+		); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}

@@ -1,0 +1,26 @@
+services:
+  trackete:
+    build:
+      context: .
+      args:
+        VERSION: ${APP_VERSION:-dev}
+    image: trackete:dev
+    container_name: trackete
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      TOKEN_TTL: ${TOKEN_TTL:-720h}
+    volumes:
+      - trackete-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  trackete-data:
