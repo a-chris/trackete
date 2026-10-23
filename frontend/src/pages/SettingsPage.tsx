@@ -95,7 +95,7 @@ export function SettingsPage() {
             <label className="form-control">
               <span className="mb-1.5 block text-sm font-medium">Name</span>
               <input
-                className="input input-bordered w-full"
+                className="input w-full"
                 value={name}
                 onChange={(event) => setNameDraft(event.target.value)}
                 maxLength={80}
@@ -103,7 +103,7 @@ export function SettingsPage() {
             </label>
             <label className="form-control">
               <span className="mb-1.5 block text-sm font-medium">Email</span>
-              <input className="input input-bordered w-full" value={user?.email ?? ''} disabled />
+              <input className="input w-full" value={user?.email ?? ''} disabled />
             </label>
             <button type="submit" className="btn btn-primary btn-sm" disabled={updateName.isPending}>
               {updateName.isPending && <span className="loading loading-spinner loading-xs" />}
@@ -124,7 +124,7 @@ export function SettingsPage() {
               <span className="mb-1.5 block text-sm font-medium">Current password</span>
               <input
                 type="password"
-                className="input input-bordered w-full"
+                className="input w-full"
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
                 autoComplete="current-password"
@@ -136,7 +136,7 @@ export function SettingsPage() {
                 <span className="mb-1.5 block text-sm font-medium">New password</span>
                 <input
                   type="password"
-                  className="input input-bordered w-full"
+                  className="input w-full"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   autoComplete="new-password"
@@ -148,7 +148,7 @@ export function SettingsPage() {
                 <span className="mb-1.5 block text-sm font-medium">Confirm</span>
                 <input
                   type="password"
-                  className="input input-bordered w-full"
+                  className="input w-full"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   autoComplete="new-password"

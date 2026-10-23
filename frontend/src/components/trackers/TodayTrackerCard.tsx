@@ -173,7 +173,7 @@ function NumericControl({ tracker, entryValue, pending, onSave, onClear }: Numer
         <input
           type="number"
           inputMode="decimal"
-          className="input input-bordered input-sm w-full pr-14 text-center tabular-nums"
+          className="input input-sm w-full pr-14 text-center tabular-nums"
           value={draft}
           placeholder="0"
           step="any"

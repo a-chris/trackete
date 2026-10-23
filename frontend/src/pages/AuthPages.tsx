@@ -94,7 +94,7 @@ export function LoginPage() {
           <span className="mb-1.5 block text-sm font-medium">Email</span>
           <input
             type="email"
-            className="input input-bordered w-full"
+            className="input w-full"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -106,7 +106,7 @@ export function LoginPage() {
           <span className="mb-1.5 block text-sm font-medium">Password</span>
           <input
             type="password"
-            className="input input-bordered w-full"
+            className="input w-full"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
@@ -187,7 +187,7 @@ export function RegisterPage() {
           <span className="mb-1.5 block text-sm font-medium">Name</span>
           <input
             type="text"
-            className="input input-bordered w-full"
+            className="input w-full"
             value={name}
             onChange={(event) => setName(event.target.value)}
             autoComplete="name"
@@ -199,7 +199,7 @@ export function RegisterPage() {
           <span className="mb-1.5 block text-sm font-medium">Email</span>
           <input
             type="email"
-            className="input input-bordered w-full"
+            className="input w-full"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -211,7 +211,7 @@ export function RegisterPage() {
           <span className="mb-1.5 block text-sm font-medium">Password</span>
           <input
             type="password"
-            className="input input-bordered w-full"
+            className="input w-full"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"

@@ -171,7 +171,7 @@ export function DashboardPage() {
         <div className="flex flex-wrap items-center gap-2">
           {dashboards.length > 1 && (
             <select
-              className="select select-bordered select-sm"
+              className="select select-sm"
               value={active.id}
               onChange={(event) => navigate(`/dashboard/${event.target.value}`)}
               aria-label="Switch dashboard"
@@ -369,7 +369,7 @@ export function DashboardPage() {
           <label className="form-control">
             <span className="mb-1.5 block text-sm font-medium">Dashboard name</span>
             <input
-              className="input input-bordered w-full"
+              className="input w-full"
               value={nameModal?.value ?? ''}
               onChange={(event) =>
                 setNameModal((current) => (current ? { ...current, value: event.target.value } : current))

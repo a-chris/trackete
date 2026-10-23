@@ -208,7 +208,7 @@ export function TrackerDetailPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
-              className="select select-bordered select-sm"
+              className="select select-sm"
               value={range}
               onChange={(event) => setRange(event.target.value as RangePreset)}
               aria-label="Range"
@@ -220,7 +220,7 @@ export function TrackerDetailPage() {
               ))}
             </select>
             <select
-              className="select select-bordered select-sm"
+              className="select select-sm"
               value={granularity}
               onChange={(event) => setGranularity(event.target.value as Granularity)}
               aria-label="Granularity"
@@ -232,7 +232,7 @@ export function TrackerDetailPage() {
             </select>
             {tracker.kind === 'numeric' && (
               <select
-                className="select select-bordered select-sm"
+                className="select select-sm"
                 value={aggregate}
                 onChange={(event) => setAggregate(event.target.value as 'sum' | 'avg')}
                 aria-label="Aggregate"

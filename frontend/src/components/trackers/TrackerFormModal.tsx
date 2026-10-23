@@ -108,7 +108,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
           <label className="form-control">
             <span className="mb-1.5 block text-sm font-medium">Name</span>
             <input
-              className="input input-bordered w-full"
+              className="input w-full"
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Beers, Weight, Meditation…"
@@ -143,7 +143,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
             Description <span className="font-normal text-base-content/40">(optional)</span>
           </span>
           <input
-            className="input input-bordered w-full"
+            className="input w-full"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="What exactly are you tracking?"
@@ -200,7 +200,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               Unit <span className="font-normal text-base-content/40">(optional)</span>
             </span>
             <input
-              className="input input-bordered w-full sm:max-w-xs"
+              className="input w-full sm:max-w-xs"
               value={unit}
               onChange={(event) => setUnit(event.target.value)}
               placeholder="beers, kg, minutes…"
@@ -228,7 +228,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               <label className="form-control">
                 <span className="mb-1 block text-xs font-medium text-base-content/60">Target</span>
                 <select
-                  className="select select-bordered select-sm"
+                  className="select select-sm"
                   value={goalType}
                   onChange={(event) => setGoalType(event.target.value as GoalType)}
                 >
@@ -242,7 +242,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                 </span>
                 <input
                   type="number"
-                  className="input input-bordered input-sm w-full"
+                  className="input input-sm w-full"
                   value={goalValue}
                   onChange={(event) => setGoalValue(event.target.value)}
                   min={0}
@@ -252,7 +252,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               <label className="form-control">
                 <span className="mb-1 block text-xs font-medium text-base-content/60">Period</span>
                 <select
-                  className="select select-bordered select-sm"
+                  className="select select-sm"
                   value={goalPeriod}
                   onChange={(event) => setGoalPeriod(event.target.value as GoalPeriod)}
                 >

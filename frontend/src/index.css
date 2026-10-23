@@ -97,6 +97,14 @@
   .stat-label {
     @apply text-[11px] font-medium uppercase tracking-wider text-base-content/50;
   }
+
+  /* daisyUI 5 dropped `.form-control`, but every form still uses it. Without a
+     column layout the wrapper stays inline: vertical margins (the `space-y-*`
+     between fields) are ignored on inline boxes and the input overflows its
+     own line box, so fields and the submit button end up flush together. */
+  .form-control {
+    @apply flex min-w-0 flex-col;
+  }
 }
 
 /* react-grid-layout theming */

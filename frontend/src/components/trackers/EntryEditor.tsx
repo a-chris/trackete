@@ -69,7 +69,7 @@ export function EntryEditor({
             <span className="mb-1 block text-[11px] font-medium text-base-content/50">Day</span>
             <input
               type="date"
-              className="input input-bordered input-sm"
+              className="input input-sm"
               value={day}
               max={today}
               onChange={(event) => setDay(event.target.value)}
@@ -82,7 +82,7 @@ export function EntryEditor({
             </span>
             {tracker.kind === 'boolean' ? (
               <select
-                className="select select-bordered select-sm"
+                className="select select-sm"
                 value={value || '1'}
                 onChange={(event) => setValue(event.target.value)}
               >
@@ -92,7 +92,7 @@ export function EntryEditor({
             ) : (
               <input
                 type="number"
-                className="input input-bordered input-sm w-28"
+                className="input input-sm w-28"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
                 placeholder="0"
@@ -106,7 +106,7 @@ export function EntryEditor({
             <span className="mb-1 block text-[11px] font-medium text-base-content/50">Note</span>
             <input
               type="text"
-              className="input input-bordered input-sm w-full"
+              className="input input-sm w-full"
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Optional"

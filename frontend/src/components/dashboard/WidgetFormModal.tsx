@@ -132,7 +132,7 @@ export function WidgetFormModal({
             <label className="form-control">
               <span className="mb-1.5 block text-sm font-medium">Tracker</span>
               <select
-                className="select select-bordered w-full"
+                className="select w-full"
                 value={trackerId}
                 onChange={(event) => setTrackerId(event.target.value)}
                 required
@@ -149,7 +149,7 @@ export function WidgetFormModal({
                 Title <span className="font-normal text-base-content/40">(optional)</span>
               </span>
               <input
-                className="input input-bordered w-full"
+                className="input w-full"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder={tracker?.name ?? 'Chart title'}
@@ -185,7 +185,7 @@ export function WidgetFormModal({
             <label className="form-control">
               <span className="mb-1.5 block text-sm font-medium">Range</span>
               <select
-                className="select select-bordered w-full"
+                className="select w-full"
                 value={range}
                 onChange={(event) => setRange(event.target.value as RangePreset)}
               >
@@ -201,7 +201,7 @@ export function WidgetFormModal({
               <label className="form-control">
                 <span className="mb-1.5 block text-sm font-medium">Metric</span>
                 <select
-                  className="select select-bordered w-full"
+                  className="select w-full"
                   value={metric}
                   onChange={(event) => setMetric(event.target.value as StatMetric)}
                 >
@@ -215,7 +215,7 @@ export function WidgetFormModal({
               <label className="form-control">
                 <span className="mb-1.5 block text-sm font-medium">Grouping</span>
                 <select
-                  className="select select-bordered w-full"
+                  className="select w-full"
                   value={granularity}
                   onChange={(event) => setGranularity(event.target.value as Granularity)}
                 >
@@ -231,7 +231,7 @@ export function WidgetFormModal({
               <label className="form-control">
                 <span className="mb-1.5 block text-sm font-medium">Aggregate</span>
                 <select
-                  className="select select-bordered w-full"
+                  className="select w-full"
                   value={aggregate}
                   onChange={(event) => setAggregate(event.target.value as Aggregate)}
                 >

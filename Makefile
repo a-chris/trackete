@@ -41,8 +41,8 @@ test: test-api test-web ## Run all checks
 test-api: ## Run Go vet and tests
 	cd backend && go vet ./... && go test ./...
 
-test-web: ## Typecheck, lint and build the frontend
-	cd frontend && bun --bun run typecheck && bun --bun run lint && bun --bun run build
+test-web: ## Typecheck, lint, build and check the frontend
+	cd frontend && bun --bun run typecheck && bun --bun run lint && bun --bun run build && bun --bun run check:ui
 
 lint: ## Lint the frontend
 	cd frontend && bun --bun run lint
