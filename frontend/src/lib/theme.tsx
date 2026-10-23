@@ -19,14 +19,34 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+// Storage and matchMedia can both throw (private mode, blocked cookies,
+// sandboxed frames). A theme preference is never worth crashing the app over.
 function prefersDark(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+  if (typeof window === 'undefined') return false
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch {
+    return false
+  }
 }
 
 function storedMode(): ThemeMode {
   if (typeof window === 'undefined') return 'system'
-  const stored = window.localStorage.getItem(STORAGE_KEY)
+  let stored: string | null
+  try {
+    stored = window.localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return 'system'
+  }
   return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+}
+
+function persistMode(mode: ThemeMode) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, mode)
+  } catch {
+    // Not persisted; the choice still applies for this session.
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -34,7 +54,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState(prefersDark)
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    let media: MediaQueryList
+    try {
+      media = window.matchMedia('(prefers-color-scheme: dark)')
+    } catch {
+      return
+    }
     const listener = (event: MediaQueryListEvent) => setSystemDark(event.matches)
     media.addEventListener('change', listener)
     return () => media.removeEventListener('change', listener)
@@ -52,7 +77,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next)
-    window.localStorage.setItem(STORAGE_KEY, next)
+    persistMode(next)
   }, [])
 
   const value = useMemo(() => ({ mode, resolved, setMode }), [mode, resolved, setMode])

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Pencil, Save, Trash } from 'lucide-react'
+import { Pencil, RotateCw, Save, Trash } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../ui/Toast'
 import { errorMessage } from '../../lib/api'
@@ -12,9 +12,21 @@ interface EntryEditorProps {
   tracker: Tracker
   entries: Entry[]
   loading: boolean
+  error?: boolean
+  errorDetail?: string
+  onRetry?: () => void
+  retrying?: boolean
 }
 
-export function EntryEditor({ tracker, entries, loading }: EntryEditorProps) {
+export function EntryEditor({
+  tracker,
+  entries,
+  loading,
+  error = false,
+  errorDetail,
+  onRetry,
+  retrying = false,
+}: EntryEditorProps) {
   const toast = useToast()
   const { save, remove } = useEntryMutations()
   const today = todayKey()
@@ -114,6 +126,19 @@ export function EntryEditor({ tracker, entries, loading }: EntryEditorProps) {
 
       {loading ? (
         <Spinner />
+      ) : error ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-center gap-3 p-6 text-center text-sm text-base-content/60"
+        >
+          <span>Couldn't load entries.{errorDetail ? ` ${errorDetail}` : ''}</span>
+          {onRetry && (
+            <button type="button" className="btn btn-xs btn-outline" onClick={onRetry} disabled={retrying}>
+              {retrying ? <span className="loading loading-spinner loading-xs" /> : <RotateCw className="size-3.5" />}
+              Retry
+            </button>
+          )}
+        </div>
       ) : entries.length === 0 ? (
         <p className="p-6 text-center text-sm text-base-content/50">No entries in this range yet.</p>
       ) : (

@@ -56,6 +56,14 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
   const titleId = useId()
   const boxRef = useRef<HTMLDivElement>(null)
   const restoreFocusRef = useRef<HTMLElement | null>(null)
+  // Parents often pass an inline arrow function, which is a new identity on every
+  // render. Keeping it in a ref lets the focus effect depend on `open` alone, so
+  // typing in a controlled input does not re-run focus management.
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
@@ -72,7 +80,7 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab') return
@@ -111,7 +119,7 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
       const restore = restoreFocusRef.current
       if (restore && document.contains(restore)) restore.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
@@ -144,7 +152,7 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
       <button
         type="button"
         className="modal-backdrop"
-        onClick={onClose}
+        onClick={() => onCloseRef.current()}
         tabIndex={-1}
         aria-hidden="true"
       >

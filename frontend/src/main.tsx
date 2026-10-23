@@ -8,10 +8,28 @@ import { App } from './App'
 import { ThemeProvider } from './lib/theme'
 import { ToastProvider } from './components/ui/Toast'
 
-// Resolve the theme before the first paint so the app does not flash.
-const storedTheme = window.localStorage.getItem('trackete.theme') ?? 'system'
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-const dark = storedTheme === 'dark' || (storedTheme === 'system' && prefersDark)
+// Resolve the theme before the first paint so the app does not flash. Storage
+// and matchMedia can throw (private mode, blocked cookies, sandboxed frames),
+// so both reads are guarded and fall back to the system preference.
+function readStoredTheme(): string | null {
+  try {
+    return window.localStorage.getItem('trackete.theme')
+  } catch {
+    return null
+  }
+}
+
+function systemPrefersDark(): boolean {
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch {
+    return false
+  }
+}
+
+const storedTheme = readStoredTheme()
+const prefersDark = systemPrefersDark()
+const dark = storedTheme === 'dark' || ((storedTheme === 'system' || storedTheme === null) && prefersDark)
 document.documentElement.dataset.theme = dark ? 'trackete-dark' : 'trackete-light'
 
 const queryClient = new QueryClient({

@@ -65,10 +65,10 @@ STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 | Variable | Why it matters |
 | --- | --- |
 | `JWT_SECRET` | **Set this.** Signs session cookies. If unset, a random secret is generated per boot and everyone is logged out on restart. Use `openssl rand -hex 32`. |
-| `TRUSTED_PROXIES` | **Set this when behind a reverse proxy** (comma-separated IPs/CIDRs). Empty means no proxy is trusted, so forwarded headers are ignored and `Secure` cookies plus per-IP login throttling would key on the proxy. |
+| `TRUSTED_PROXIES` | **Set this when behind a reverse proxy** (comma-separated IPs/CIDRs). Empty means no proxy is trusted: the forwarded client IP is ignored (so per-IP login throttling keys on the proxy) and `X-Forwarded-Proto` only marks cookies `Secure` when it comes from a trusted proxy. |
 | `ALLOW_REGISTRATION` | Defaults to `true`. Set `false` once your accounts exist. |
 | `TOKEN_TTL` | Session lifetime, default `720h` (30 days). |
-| `DB_PATH` / volume | Everything lives in the SQLite file (Docker: `/data/trackete.db`). Mount a persistent volume. |
+| `DB_PATH` / volume | Everything lives in the SQLite file (Docker: `/data/trackete.db`). Mount a persistent volume. When overriding `DB_PATH`, keep it under `/data`, or the database lands outside the volume and is lost on restart. |
 | `PORT` | HTTP port, default `8080`. |
 | `STATIC_DIR` | Built SPA directory. Empty = API only (Docker sets `/app/dist`). |
 | `CORS_ORIGINS` | Comma-separated extra origins for credentialed requests. Only for cross-origin development; wildcards are ignored. |
@@ -91,11 +91,15 @@ and put the proxy in front. Set `TRUSTED_PROXIES=127.0.0.1/32` (or the proxy's
 Docker network) so forwarded headers are honored.
 
 SQLite runs in WAL mode: to back up, archive the whole volume while the container
-is stopped (or use `sqlite3 .backup`).
+is stopped (or use `sqlite3 .backup`). Compose pins the volume name to
+`trackete-data` (see `docker-compose.yml`), so these commands target exactly the
+volume the container uses, whether it was created by Compose or by `docker run`.
 
 ```bash
+docker compose stop trackete
 docker run --rm -v trackete-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/trackete-backup.tar.gz -C /data .
+docker compose start trackete
 ```
 
 ## Development

@@ -8,16 +8,26 @@ import {
   buildSparklineOptions,
 } from '../../lib/chartOptions'
 import { formatValue } from '../../lib/format'
-import { ChartColumn, TriangleAlert } from 'lucide-react'
+import { ChartColumn, RotateCw, TriangleAlert } from 'lucide-react'
 
 interface ChartRendererProps {
   data: ChartData | undefined
   kind: TrackerKind
   unit?: string
   color?: string
+  /** Rendered as a Retry button when the chart data could not be loaded. */
+  onRetry?: () => void
+  retrying?: boolean
 }
 
-export function ChartRenderer({ data, kind, unit = '', color = '#6366f1' }: ChartRendererProps) {
+export function ChartRenderer({
+  data,
+  kind,
+  unit = '',
+  color = '#6366f1',
+  onRetry,
+  retrying = false,
+}: ChartRendererProps) {
   const theme = useChartTheme()
 
   if (data === undefined) {
@@ -28,6 +38,12 @@ export function ChartRenderer({ data, kind, unit = '', color = '#6366f1' }: Char
       >
         <TriangleAlert className="size-6" />
         <p className="text-xs">Couldn't load chart data.</p>
+        {onRetry && (
+          <button type="button" className="btn btn-xs btn-outline" onClick={onRetry} disabled={retrying}>
+            {retrying ? <span className="loading loading-spinner loading-xs" /> : <RotateCw className="size-3.5" />}
+            Retry
+          </button>
+        )}
       </div>
     )
   }

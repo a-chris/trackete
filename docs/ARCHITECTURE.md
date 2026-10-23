@@ -28,8 +28,10 @@ the same image.
   `PRIMARY KEY (tracker_id, day)`; `day` is a local calendar date
   (`YYYY-MM-DD`) supplied by the browser, so timezones never shift a log.
   Logging the same day again replaces the value.
-- **dashboards**: per-user, exactly one `is_default` (enforced by a partial
-  unique index).
+- **dashboards**: per-user, at most one `is_default` (enforced by a partial
+  unique index). Migration `0003_default_dashboard_backfill.sql` also promotes
+  the oldest dashboard for every user who had dashboards but none flagged, so
+  existing databases end up with exactly one default.
 - **widgets**: dashboard, tracker, chart type, config JSON
   (`range`, `granularity`, `aggregate`, `metric`), 12-column grid position.
 

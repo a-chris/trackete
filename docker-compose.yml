@@ -9,6 +9,7 @@ services:
     ports:
       - "${PORT:-8080}:8080"
     environment:
+      DB_PATH: ${DB_PATH:-/data/trackete.db}
       JWT_SECRET: ${JWT_SECRET:-}
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
       TOKEN_TTL: ${TOKEN_TTL:-720h}
@@ -26,3 +27,6 @@ services:
 
 volumes:
   trackete-data:
+    # Pinned so the README's `-v trackete-data:/data` backup/restore commands and
+    # the compose project refer to the same volume.
+    name: trackete-data

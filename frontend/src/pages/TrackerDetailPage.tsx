@@ -53,7 +53,13 @@ export function TrackerDetailPage() {
   const to = todayKey()
   const from = useMemo(() => rangeStart(range, new Date()), [range])
 
-  const { data: chartData, isLoading: chartLoading } = useTrackerData({
+  const {
+    data: chartData,
+    isLoading: chartLoading,
+    isError: chartIsError,
+    refetch: refetchChart,
+    isFetching: chartFetching,
+  } = useTrackerData({
     trackerId,
     from,
     to,
@@ -63,7 +69,14 @@ export function TrackerDetailPage() {
     enabled: Boolean(tracker),
   })
 
-  const { data: entries = [], isLoading: entriesLoading } = useQuery({
+  const {
+    data: entries = [],
+    isLoading: entriesLoading,
+    isError: entriesError,
+    error: entriesErrorValue,
+    refetch: refetchEntries,
+    isFetching: entriesFetching,
+  } = useQuery({
     queryKey: ['entries', trackerId, from, to],
     queryFn: () => api.entries(trackerId, from, to),
     enabled: Boolean(tracker),
@@ -236,10 +249,12 @@ export function TrackerDetailPage() {
             <Spinner label="Loading chart…" />
           ) : (
             <ChartRenderer
-              data={chartData}
+              data={chartIsError ? undefined : chartData}
               kind={tracker.kind}
               unit={tracker.unit}
               color={tracker.color}
+              onRetry={chartIsError ? () => void refetchChart() : undefined}
+              retrying={chartFetching}
             />
           )}
         </div>
@@ -256,6 +271,10 @@ export function TrackerDetailPage() {
         tracker={tracker}
         entries={entries}
         loading={entriesLoading}
+        error={entriesError}
+        errorDetail={entriesError ? errorMessage(entriesErrorValue) : undefined}
+        onRetry={() => void refetchEntries()}
+        retrying={entriesFetching}
       />
 
       {editOpen && <TrackerFormModal tracker={tracker} onClose={() => setEditOpen(false)} />}

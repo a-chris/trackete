@@ -102,36 +102,52 @@ func (s *Store) GetDashboard(ctx context.Context, userID, id string) (*model.Das
 }
 
 // CreateDashboard inserts a dashboard, making it the default when it is the
-// user's first one. The count check and the insert share a transaction so two
-// concurrent creates cannot both claim is_default = 1 (which the partial unique
-// index would reject).
+// user's first one. The decision is part of the INSERT itself, so there is no
+// count-then-insert window in which two creates could both claim is_default = 1.
 func (s *Store) CreateDashboard(ctx context.Context, userID, name string) (*model.Dashboard, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	id, err := s.insertDashboard(ctx, userID, name, false)
+	if err != nil && isRetryableDashboardInsert(err) {
+		// Two concurrent first-time creates can still both evaluate the CASE as
+		// "no dashboards yet"; the partial unique index rejects one of them.
+		// Fall back to a plain dashboard so both callers succeed.
+		id, err = s.insertDashboard(ctx, userID, name, true)
+	}
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	return s.GetDashboard(ctx, userID, id)
+}
 
-	var count int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(1) FROM dashboards WHERE user_id = ?`, userID).Scan(&count); err != nil {
-		return nil, err
+// isRetryableDashboardInsert reports whether a failed dashboard insert is worth
+// one retry as a non-default row: a unique violation means a concurrent create
+// already claimed the default, and a locked database deserves a second attempt.
+func isRetryableDashboardInsert(err error) bool {
+	if isUniqueViolation(err) {
+		return true
 	}
-	isDefault := 0
-	if count == 0 {
-		isDefault = 1
-	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "database is locked") || strings.Contains(msg, "database table is locked")
+}
+
+// insertDashboard writes one dashboard row. When forceNotDefault is false the
+// default flag is computed in-statement from the user's existing dashboards.
+func (s *Store) insertDashboard(ctx context.Context, userID, name string, forceNotDefault bool) (string, error) {
 	ts := formatTime(now())
 	id := newID()
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO dashboards (id, user_id, name, is_default, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		id, userID, strings.TrimSpace(name), isDefault, ts, ts,
-	); err != nil {
-		return nil, err
+
+	query := `INSERT INTO dashboards (id, user_id, name, is_default, created_at, updated_at)
+	          VALUES (?, ?, ?, CASE WHEN EXISTS (SELECT 1 FROM dashboards WHERE user_id = ?) THEN 0 ELSE 1 END, ?, ?)`
+	args := []any{id, userID, strings.TrimSpace(name), userID, ts, ts}
+	if forceNotDefault {
+		query = `INSERT INTO dashboards (id, user_id, name, is_default, created_at, updated_at)
+		         VALUES (?, ?, ?, 0, ?, ?)`
+		args = []any{id, userID, strings.TrimSpace(name), ts, ts}
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
+
+	if _, err := s.db.ExecContext(ctx, query, args...); err != nil {
+		return "", err
 	}
-	return s.GetDashboard(ctx, userID, id)
+	return id, nil
 }
 
 func (s *Store) RenameDashboard(ctx context.Context, userID, id, name string) (*model.Dashboard, error) {

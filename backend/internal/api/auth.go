@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -238,8 +239,46 @@ func (a *API) clearSession(c *gin.Context) {
 	})
 }
 
+// secureCookie marks the session cookie Secure when the request itself arrived
+// over TLS, or when it came through a hop listed in TRUSTED_PROXIES reporting
+// X-Forwarded-Proto: https. A header sent by an untrusted client is ignored, so
+// a plain-HTTP deployment cannot be talked into issuing Secure cookies.
 func (a *API) secureCookie(c *gin.Context) bool {
-	return c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https")
+	if c.Request.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") &&
+		isTrustedProxy(c.Request.RemoteAddr, a.cfg.TrustedProxies)
+}
+
+// isTrustedProxy reports whether remoteAddr (host or host:port) belongs to one
+// of the configured TRUSTED_PROXIES entries, which may be IPs or CIDR blocks.
+func isTrustedProxy(remoteAddr string, trusted []string) bool {
+	host := remoteAddr
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	ip := net.ParseIP(strings.Trim(strings.TrimSpace(host), "[]"))
+	if ip == nil {
+		return false
+	}
+
+	for _, entry := range trusted {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		if _, network, err := net.ParseCIDR(entry); err == nil {
+			if network.Contains(ip) {
+				return true
+			}
+			continue
+		}
+		if candidate := net.ParseIP(entry); candidate != nil && candidate.Equal(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func validEmail(email string) bool {

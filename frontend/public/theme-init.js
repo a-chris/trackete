@@ -1,15 +1,25 @@
 // Applies the saved theme before first paint so the app does not flash.
 // Kept dependency-free and external so it satisfies `script-src 'self'`.
+// Storage can throw (private mode, blocked cookies, sandboxed iframe), so every
+// access is wrapped: a failure falls back to prefers-color-scheme.
 ;(function () {
+  var stored = null
   try {
-    var stored = window.localStorage.getItem('trackete.theme')
-    var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
-    var dark =
-      mode === 'dark' ||
-      (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-    document.documentElement.dataset.theme = dark ? 'trackete-dark' : 'trackete-light'
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+    stored = window.localStorage.getItem('trackete.theme')
   } catch (error) {
-    // Storage or matchMedia unavailable: keep the markup default.
+    stored = null
   }
+
+  var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+
+  var prefersDark = false
+  try {
+    prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch (error) {
+    prefersDark = false
+  }
+
+  var dark = mode === 'dark' || (mode === 'system' && prefersDark)
+  document.documentElement.dataset.theme = dark ? 'trackete-dark' : 'trackete-light'
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
 })()
