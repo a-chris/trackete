@@ -7,6 +7,9 @@ dist/
 frontend/dist/
 backend/trackete
 backend/coverage.out
+backend/.bin/
+backend/.tmp/
+backend/build-errors.log
 
 # local data
 data/

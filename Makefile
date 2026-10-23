@@ -2,6 +2,8 @@ SHELL := /bin/bash
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 IMAGE ?= trackete
 TAG ?= $(VERSION)
+AIR_VERSION ?= v1.67.4
+AIR ?= $(CURDIR)/backend/.bin/air
 
 .DEFAULT_GOAL := help
 
@@ -13,11 +15,15 @@ help: ## Show this help
 install: ## Install frontend dependencies
 	cd frontend && npm ci
 
-dev: ## Run the API and the Vite dev server together
+dev: ## Run the API (live reload) and the Vite dev server together
 	$(MAKE) -j2 dev-api dev-web
 
-dev-api: ## Run the Go API on :8080
-	cd backend && DB_PATH=$${DB_PATH:-../data/trackete.db} go run ./cmd/server
+$(AIR):
+	@echo "Installing Air $(AIR_VERSION) into backend/.bin (first run only)…"
+	@cd backend && GOBIN=$(CURDIR)/backend/.bin go install github.com/air-verse/air@$(AIR_VERSION)
+
+dev-api: $(AIR) ## Run the Go API with live reload on :8080
+	cd backend && DB_PATH=$${DB_PATH:-../data/trackete.db} PORT=$${PORT:-8080} STATIC_DIR=$${STATIC_DIR:-} $(AIR)
 
 dev-web: ## Run the Vite dev server on :5173
 	cd frontend && npm run dev

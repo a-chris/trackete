@@ -12,6 +12,9 @@
 **/coverage
 frontend/.vite
 backend/trackete
+backend/.bin
+backend/.tmp
+backend/build-errors.log
 README.md
 docs
 CONTRIBUTING.md

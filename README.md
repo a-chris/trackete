@@ -105,9 +105,15 @@ docker compose start trackete
 ## Development
 
 ```bash
-make dev        # Go API :8080 + Vite :5173 (proxied, cookies stay same-origin)
+make dev        # API with live reload (Air) on :8080 + Vite on :5173
 make test       # Go vet/tests, TypeScript, ESLint, production build
 ```
+
+`make dev` runs the API and the Vite dev server side by side; Vite proxies
+`/api` to the API, so cookies stay same-origin. Editing a Go file (or an
+embedded SQL migration) rebuilds and restarts the API — the first run installs
+a pinned Air into `backend/.bin/`. The dev database lives in `data/`
+(`DB_PATH`, gitignored).
 
 Layout: `backend/` (Go API, SQLite store, embedded migrations, analytics) and
 `frontend/` (React, DaisyUI themes, ApexCharts, dashboard grid).

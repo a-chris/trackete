@@ -11,8 +11,12 @@ and installs both.
 ```bash
 mise install
 make install        # npm ci
-make dev            # API on :8080, Vite on :5173
+make dev            # API on :8080 (Air live reload), Vite on :5173
 ```
+
+The first `make dev` installs a pinned Air into `backend/.bin/` (gitignored).
+Editing Go files or embedded SQL migrations restarts the API automatically;
+Vite hot-reloads the React app.
 
 The Vite dev server proxies `/api` to `http://localhost:8080`, so cookies stay
 same-origin in development.
