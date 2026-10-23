@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/a-chris/trackete/backend/internal/model"
 )
@@ -105,25 +106,44 @@ func (s *Store) GetDashboard(ctx context.Context, userID, id string) (*model.Das
 // user's first one. The decision is part of the INSERT itself, so there is no
 // count-then-insert window in which two creates could both claim is_default = 1.
 func (s *Store) CreateDashboard(ctx context.Context, userID, name string) (*model.Dashboard, error) {
-	id, err := s.insertDashboard(ctx, userID, name, false)
-	if err != nil && isRetryableDashboardInsert(err) {
-		// Two concurrent first-time creates can still both evaluate the CASE as
-		// "no dashboards yet"; the partial unique index rejects one of them.
-		// Fall back to a plain dashboard so both callers succeed.
-		id, err = s.insertDashboard(ctx, userID, name, true)
+	var lastErr error
+	for attempt := 0; attempt < 4; attempt++ {
+		id, err := s.insertDashboard(ctx, userID, name, false)
+		if err == nil {
+			return s.GetDashboard(ctx, userID, id)
+		}
+		lastErr = err
+
+		switch {
+		case isUniqueViolation(err):
+			// A concurrent create already claimed the default; add this one as a
+			// normal dashboard so the caller still succeeds.
+			id, err = s.insertDashboard(ctx, userID, name, true)
+			if err == nil {
+				return s.GetDashboard(ctx, userID, id)
+			}
+			lastErr = err
+			if !isLockedError(err) {
+				return nil, err
+			}
+		case isLockedError(err):
+			// Another writer briefly held SQLite. Retry the deciding INSERT rather
+			// than forcing a non-default row, so a lock alone can never leave a
+			// user without a default dashboard.
+			time.Sleep(time.Duration(attempt+1) * 25 * time.Millisecond)
+		default:
+			return nil, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return s.GetDashboard(ctx, userID, id)
+	return nil, lastErr
 }
 
 // isRetryableDashboardInsert reports whether a failed dashboard insert is worth
 // one retry as a non-default row: a unique violation means a concurrent create
 // already claimed the default, and a locked database deserves a second attempt.
-func isRetryableDashboardInsert(err error) bool {
-	if isUniqueViolation(err) {
-		return true
+func isLockedError(err error) bool {
+	if err == nil {
+		return false
 	}
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "database is locked") || strings.Contains(msg, "database table is locked")
