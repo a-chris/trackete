@@ -55,6 +55,9 @@ export function TrackerDetailPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const sharing = useTrackerSharing(trackerId)
   const shared = (sharing.data?.members.length ?? 1) > 1
+  const openInvitations = (sharing.data?.invitations ?? []).filter(
+    (invitation) => invitation.status === 'pending' || invitation.status === 'delivered',
+  ).length
 
   const to = todayKey()
   const from = useMemo(() => rangeStart(range, new Date()), [range])
@@ -163,10 +166,9 @@ export function TrackerDetailPage() {
               Shared
             </span>
           )}
-          {/* Sharing stays invisible on a single-owner tracker: the invite
-              field on the edit form covers the first invite, and this button
-              appears once the tracker actually has another member. */}
-          {shared && (
+          {/* The owner always gets the sharing panel so invitations stay
+              trackable; members see it once the tracker has another member. */}
+          {(tracker.role === 'owner' || shared) && (
             <button
               type="button"
               className="btn btn-sm btn-ghost gap-2 border-base-300"
@@ -174,6 +176,9 @@ export function TrackerDetailPage() {
             >
               <Users className="size-3.5" />
               {tracker.role === 'member' ? 'Members' : 'Share'}
+              {tracker.role === 'owner' && openInvitations > 0 && (
+                <span className="num text-[11px] text-base-content/60">{openInvitations}</span>
+              )}
             </button>
           )}
           {tracker.role !== 'member' && (
