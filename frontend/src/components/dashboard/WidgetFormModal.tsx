@@ -38,7 +38,7 @@ const chartChoices: { value: ChartType; label: string; hint: string; icon: typeo
   { value: 'stat', label: 'Stat', hint: 'One headline number', icon: Hash },
 ]
 
-const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/45'
+const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/65'
 
 const ranges: { value: RangePreset; label: string }[] = [
   { value: '7d', label: 'Last 7 days' },
@@ -123,7 +123,7 @@ export function WidgetFormModal({
       }
     >
       {trackers.length === 0 ? (
-        <p className="text-sm text-base-content/50">
+        <p className="text-sm text-base-content/70">
           Create a tracker first — charts are always built on top of one tracker.
         </p>
       ) : (
@@ -148,7 +148,7 @@ export function WidgetFormModal({
             </label>
             <label className="form-control">
               <span className={label}>
-                Title <span className="text-base-content/25">(optional)</span>
+                Title <span className="text-base-content/60">(optional)</span>
               </span>
               <input
                 className="input w-full rounded-[3px] border-base-300"
@@ -175,9 +175,9 @@ export function WidgetFormModal({
                   }`}
                   aria-pressed={chartType === value}
                 >
-                  <Icon className="size-3.5 text-base-content/50" />
+                  <Icon className="size-3.5 text-base-content/70" />
                   <p className="mt-1.5 text-[13px] font-medium">{label}</p>
-                  <p className="text-[11px] leading-tight text-base-content/40">{hint}</p>
+                  <p className="text-[11px] leading-tight text-base-content/65">{hint}</p>
                 </button>
               ))}
             </div>
@@ -246,7 +246,7 @@ export function WidgetFormModal({
             )}
           </div>
 
-          <p className="text-xs text-base-content/40">
+          <p className="text-xs text-base-content/65">
             Charts update automatically. You can drag and resize them on the dashboard while edit mode is on.
           </p>
         </form>

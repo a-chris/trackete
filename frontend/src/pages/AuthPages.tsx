@@ -35,7 +35,7 @@ function AuthFrame({
             become a life.
           </p>
           <div className="mt-10 h-px w-14 bg-base-content/20" />
-          <p className="mt-6 max-w-sm text-sm leading-relaxed text-base-content/45">
+          <p className="mt-6 max-w-sm text-sm leading-relaxed text-base-content/65">
             Log a habit or a number in seconds. Trackete turns the entries into the charts you
             actually want to look at.
           </p>
@@ -50,9 +50,9 @@ function AuthFrame({
             <Logo />
           </div>
           <h1 className="display text-2xl">{title}</h1>
-          <p className="mt-2 text-sm text-base-content/45">{subtitle}</p>
+          <p className="mt-2 text-sm text-base-content/65">{subtitle}</p>
           <div className="mt-8">{children}</div>
-          <div className="mt-6 text-sm text-base-content/50">{footer}</div>
+          <div className="mt-6 text-sm text-base-content/70">{footer}</div>
           <div className="mt-10 border-t border-base-300 pt-4">
             <ThemeToggle compact />
           </div>
@@ -63,7 +63,7 @@ function AuthFrame({
 }
 
 const authField = 'input h-10 w-full rounded-[3px] border-base-300'
-const authLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/70'
+const authLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/75'
 
 function useRedirectTarget(): string {
   const location = useLocation()
@@ -183,7 +183,7 @@ export function RegisterPage() {
           </Link>
         }
       >
-        <p className="text-sm text-base-content/70">
+        <p className="text-sm text-base-content/75">
           Ask the person running this Trackete instance to create an account for you, or deploy your
           own instance.
         </p>
@@ -243,7 +243,7 @@ export function RegisterPage() {
             minLength={8}
             required
           />
-          <span className="mt-1.5 block text-xs text-base-content/40">At least 8 characters.</span>
+          <span className="mt-1.5 block text-xs text-base-content/65">At least 8 characters.</span>
         </label>
         <button type="submit" className="btn btn-primary h-10 w-full" disabled={register.isPending}>
           {register.isPending && <span className="loading loading-spinner loading-sm" />}

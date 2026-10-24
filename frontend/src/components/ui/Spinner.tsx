@@ -1,6 +1,6 @@
 export function Spinner({ label }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-sm text-base-content/60">
+    <div className="flex items-center justify-center gap-2 py-10 text-sm text-base-content/70">
       <span className="loading loading-spinner loading-sm" />
       {label && <span>{label}</span>}
     </div>

@@ -57,7 +57,7 @@ export function TodayPage() {
         </div>
 
         {items.length > 0 && (
-          <p className="mt-5 text-sm text-base-content/50">
+          <p className="mt-5 text-sm text-base-content/70">
             {remaining === 0
               ? 'Everything is logged. That is the whole day closed out.'
               : `${remaining} still open${remaining === 1 ? '' : 's'} — log it and keep the run going.`}
@@ -110,7 +110,7 @@ function Readout({ label, value, muted = false }: { label: string; value: string
     <div>
       <p className="eyebrow">{label}</p>
       <p
-        className={`num mt-1.5 text-2xl leading-none ${muted ? 'text-base-content/45' : 'text-base-content'}`}
+        className={`num mt-1.5 text-2xl leading-none ${muted ? 'text-base-content/65' : 'text-base-content'}`}
       >
         {value}
       </p>

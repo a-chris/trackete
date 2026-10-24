@@ -57,7 +57,7 @@ export function TodayTrackerRow({ item }: { item: OverviewItem }) {
         </div>
 
         <div className="mt-1 flex items-center gap-2">
-          <p className="eyebrow truncate text-[10px] text-base-content/40">{meta}</p>
+          <p className="eyebrow truncate text-[10px] text-base-content/65">{meta}</p>
           {showPeriod && (
             <span className="ml-auto flex shrink-0 items-center gap-1.5">
               <span className="hidden h-[2px] w-8 bg-base-300 sm:block" aria-hidden="true">
@@ -70,7 +70,7 @@ export function TodayTrackerRow({ item }: { item: OverviewItem }) {
               </span>
               <span
                 className={`num text-[10px] ${
-                  overTarget ? 'text-error' : onTarget ? 'text-success' : 'text-base-content/40'
+                  overTarget ? 'text-error' : onTarget ? 'text-success' : 'text-base-content/65'
                 }`}
                 title={`${formatValue(item.periodTotal, tracker.unit, tracker.kind)} of ${formatValue(
                   target ?? 0,
@@ -92,7 +92,7 @@ export function TodayTrackerRow({ item }: { item: OverviewItem }) {
             className={`grid size-9 place-items-center rounded-[3px] border transition-colors ${
               isDone
                 ? 'border-base-content bg-base-content text-base-100'
-                : 'border-base-300 text-base-content/25 hover:border-base-content/50 hover:text-base-content/50'
+                : 'border-base-300 text-base-content/55 hover:border-base-content/50 hover:text-base-content/70'
             }`}
             onClick={() => save.mutate({ trackerId: tracker.id, day, value: isDone ? 0 : 1 })}
             disabled={save.isPending}
@@ -158,7 +158,7 @@ function NumericControl({ tracker, entryValue, pending, onSave, onClear }: Numer
     <div className="flex items-center gap-1">
       <button
         type="button"
-        className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/50 transition-colors hover:border-base-content/40 hover:text-base-content disabled:opacity-40"
+        className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/70 transition-colors hover:border-base-content/40 hover:text-base-content disabled:opacity-40"
         onClick={() => saveValue(currentValue - 1)}
         disabled={pending}
         aria-label="Decrease"
@@ -185,7 +185,7 @@ function NumericControl({ tracker, entryValue, pending, onSave, onClear }: Numer
       </div>
       <button
         type="button"
-        className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/50 transition-colors hover:border-base-content/40 hover:text-base-content disabled:opacity-40"
+        className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/70 transition-colors hover:border-base-content/40 hover:text-base-content disabled:opacity-40"
         onClick={() => saveValue(currentValue + 1)}
         disabled={pending}
         aria-label="Increase"
@@ -195,7 +195,7 @@ function NumericControl({ tracker, entryValue, pending, onSave, onClear }: Numer
       {entryValue !== undefined && (
         <button
           type="button"
-          className="hidden size-7 place-items-center rounded-[3px] text-base-content/30 transition-colors hover:text-error sm:grid"
+          className="hidden size-7 place-items-center rounded-[3px] text-base-content/55 transition-colors hover:text-error sm:grid"
           onClick={onClear}
           disabled={pending}
           aria-label="Clear today's entry"

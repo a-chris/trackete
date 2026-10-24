@@ -21,7 +21,7 @@
   --color-base-content: oklch(21% 0.012 55);
   --color-primary: oklch(21% 0.012 55);
   --color-primary-content: oklch(98.6% 0.003 85);
-  --color-secondary: oklch(64% 0.19 42);
+  --color-secondary: oklch(54% 0.19 42);
   --color-secondary-content: oklch(98.6% 0.003 85);
   --color-accent: oklch(72% 0.15 62);
   --color-accent-content: oklch(20% 0.03 62);
@@ -121,7 +121,7 @@
 
   /* Small caps metadata. Mono keeps columns of numbers and labels honest. */
   .eyebrow {
-    @apply font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-base-content/45;
+    @apply font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-base-content/70;
   }
 
   /* Every number in the UI. Tabular, monospaced, tight. */
@@ -174,9 +174,28 @@
   cursor: grabbing;
 }
 
+/* daisyUI ships a readable-but-not-readable disabled input (40% ink) and 50%
+   placeholders. These live outside @layer components on purpose: unlayered
+   rules beat any layered rule, which is the only way to outrank the plugin. */
+.input::placeholder,
+.textarea::placeholder {
+  color: color-mix(in oklab, var(--color-base-content) 62%, transparent);
+}
+
+.input:disabled {
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+
 /* Charts are canvases: strip the paper grain and the empty-state shimmer. */
 .apexcharts-canvas {
   font-feature-settings: "tnum";
+}
+
+/* Apex paints legend labels in a series colour. The marker already carries the
+   hue, so keep the label in ink and readable on both themes. */
+.apexcharts-legend-text {
+  color: var(--color-base-content) !important;
+  opacity: 0.78;
 }
 
 /* Slim scrollbars that match the theme */

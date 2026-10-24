@@ -17,7 +17,7 @@ export function ErrorState({ title, description, onRetry, retrying = false }: Er
         <TriangleAlert className="size-6" />
       </div>
       <h3 className="text-base font-semibold">{title}</h3>
-      {description && <p className="mt-1 max-w-md text-sm text-base-content/60">{description}</p>}
+      {description && <p className="mt-1 max-w-md text-sm text-base-content/70">{description}</p>}
       {onRetry && (
         <button
           type="button"

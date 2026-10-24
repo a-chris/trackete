@@ -53,7 +53,7 @@ export function AppShell() {
                   'text-[9px] font-medium uppercase tracking-[0.14em] transition-colors',
                   isActive
                     ? 'bg-base-content/[0.055] text-base-content'
-                    : 'text-base-content/35 hover:text-base-content/70',
+                    : 'text-base-content/60 hover:text-base-content/75',
                 ].join(' ')
               }
             >
@@ -126,7 +126,7 @@ export function AppShell() {
             end={end}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center gap-1 py-2.5 text-[9px] font-medium uppercase tracking-[0.14em] ${
-                isActive ? 'text-base-content' : 'text-base-content/35'
+                isActive ? 'text-base-content' : 'text-base-content/60'
               }`
             }
           >

@@ -101,7 +101,7 @@ export function TrackerDetailPage() {
     return (
       <div className="surface p-8 text-center">
         <p className="font-medium">Tracker not found</p>
-        <p className="mt-1 text-sm text-base-content/60">It may have been deleted.</p>
+        <p className="mt-1 text-sm text-base-content/70">It may have been deleted.</p>
         <Link to="/trackers" className="btn btn-primary btn-sm mt-4">
           Back to trackers
         </Link>
@@ -114,13 +114,13 @@ export function TrackerDetailPage() {
 
   return (
     <div className="space-y-8">
-      <div className="eyebrow flex items-center gap-2 text-base-content/40">
+      <div className="eyebrow flex items-center gap-2 text-base-content/65">
         <Link to="/trackers" className="inline-flex items-center gap-1.5 hover:text-base-content">
           <ArrowLeft className="size-3" />
           Trackers
         </Link>
-        <span className="text-base-content/20">/</span>
-        <span className="truncate text-base-content/60">{tracker.name}</span>
+        <span className="text-base-content/40">/</span>
+        <span className="truncate text-base-content/70">{tracker.name}</span>
       </div>
 
       <header className="flex flex-col gap-5 border-b border-base-300 pb-6 sm:flex-row sm:items-start sm:justify-between">
@@ -141,7 +141,7 @@ export function TrackerDetailPage() {
                   : `Number${tracker.unit ? ` in ${tracker.unit}` : ''}`)}
             </p>
             {tracker.description && (
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-base-content/50">
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-base-content/70">
                 {tracker.description}
               </p>
             )}
@@ -211,7 +211,7 @@ export function TrackerDetailPage() {
                 className={`flex h-8 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
                   chart === value
                     ? 'bg-base-content text-base-100'
-                    : 'text-base-content/45 hover:bg-base-content/5 hover:text-base-content'
+                    : 'text-base-content/65 hover:bg-base-content/5 hover:text-base-content'
                 }`}
                 onClick={() => setChart(value)}
                 aria-pressed={chart === value}
@@ -275,7 +275,7 @@ export function TrackerDetailPage() {
         </div>
 
         {summary && tracker.goal && summary.periodsTotal > 0 && (
-          <p className="num mt-2 text-[11px] uppercase tracking-[0.08em] text-base-content/40">
+          <p className="num mt-2 text-[11px] uppercase tracking-[0.08em] text-base-content/65">
             on target in {summary.periodsCompleted} of {summary.periodsTotal} {tracker.goal.period}s
           </p>
         )}
@@ -302,7 +302,7 @@ function StatBox({ label, value, hint }: { label: string; value: string; hint?: 
     <div className="flex-1 py-3.5 sm:px-5 sm:first:pl-0 sm:last:pr-0">
       <dt className="eyebrow">{label}</dt>
       <dd className="num mt-1.5 truncate text-xl leading-none">{value}</dd>
-      {hint && <p className="mt-1.5 truncate text-[11px] text-base-content/35">{hint}</p>}
+      {hint && <p className="mt-1.5 truncate text-[11px] text-base-content/60">{hint}</p>}
     </div>
   )
 }

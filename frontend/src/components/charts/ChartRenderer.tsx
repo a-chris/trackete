@@ -37,7 +37,7 @@ export function ChartRenderer({
     return (
       <div
         role="alert"
-        className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/40"
+        className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/65"
       >
         <TriangleAlert className="size-6" />
         <p className="text-xs">Couldn't load chart data.</p>
@@ -53,7 +53,7 @@ export function ChartRenderer({
 
   if (data.empty) {
     return (
-      <div className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/40">
+      <div className="flex h-full min-h-32 flex-col items-center justify-center gap-2 text-center text-base-content/65">
         <ChartColumn className="size-6" />
         <p className="text-xs">No entries in this range yet.</p>
       </div>

@@ -12,9 +12,9 @@ interface TrackerFormModalProps {
   onClose: () => void
 }
 
-const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/45'
+const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/65'
 const field = 'input w-full rounded-[3px] border-base-300'
-const subLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/40'
+const subLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/65'
 const pick = 'rounded-[3px] border p-3.5 text-left transition'
 
 const periodOptions: { value: GoalPeriod; label: string }[] = [
@@ -147,7 +147,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
 
         <label className="form-control">
           <span className={label}>
-            Description <span className="text-base-content/25">(optional)</span>
+            Description <span className="text-base-content/60">(optional)</span>
           </span>
           <input
             className={field}
@@ -176,9 +176,9 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               }`}
               aria-pressed={kind === 'boolean'}
             >
-              <ToggleLeft className="size-4 text-base-content/50" />
+              <ToggleLeft className="size-4 text-base-content/70" />
               <p className="mt-2 text-sm font-medium">Yes / No</p>
-              <p className="mt-1 text-xs leading-relaxed text-base-content/45">
+              <p className="mt-1 text-xs leading-relaxed text-base-content/65">
                 A habit you did or did not do today.
               </p>
             </button>
@@ -192,9 +192,9 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               }`}
               aria-pressed={kind === 'numeric'}
             >
-              <Hash className="size-4 text-base-content/50" />
+              <Hash className="size-4 text-base-content/70" />
               <p className="mt-2 text-sm font-medium">Number</p>
-              <p className="mt-1 text-xs leading-relaxed text-base-content/45">
+              <p className="mt-1 text-xs leading-relaxed text-base-content/65">
                 A value per day, like 3 beers, 72.5 kg or 30 minutes.
               </p>
             </button>
@@ -204,7 +204,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         {kind === 'numeric' && (
           <label className="form-control">
             <span className={label}>
-              Unit <span className="text-base-content/25">(optional)</span>
+              Unit <span className="text-base-content/60">(optional)</span>
             </span>
             <input
               className={`${field} sm:max-w-xs`}
@@ -219,7 +219,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         <div className="border-y border-base-300 py-3">
           <label className="flex cursor-pointer items-center justify-between gap-4">
             <span className="flex items-center gap-2 text-[13px] font-medium">
-              <Goal className="size-3.5 text-base-content/50" />
+              <Goal className="size-3.5 text-base-content/70" />
               Add a goal
             </span>
             <input
@@ -245,7 +245,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
               </label>
               <label className="form-control">
                 <span className={subLabel}>
-                  Value {unit && <span className="text-base-content/25">({unit})</span>}
+                  Value {unit && <span className="text-base-content/60">({unit})</span>}
                 </span>
                 <input
                   type="number"
@@ -270,7 +270,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                   ))}
                 </select>
               </label>
-              <p className="text-xs text-base-content/40 sm:col-span-3">
+              <p className="text-xs text-base-content/65 sm:col-span-3">
                 Example: “at most 5 per week” for beers, or “at least 1 per day” for meditation.
               </p>
             </div>

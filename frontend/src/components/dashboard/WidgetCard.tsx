@@ -38,7 +38,7 @@ export function WidgetCard({
         <div className="min-w-0">
           <p className="eyebrow truncate">
             {tracker ? tracker.name : 'Tracker missing'}
-            <span className="mx-1.5 text-base-content/25">/</span>
+            <span className="mx-1.5 text-base-content/55">/</span>
             {rangeDays(widget.config.range)}
           </p>
           <p className="mt-1 truncate text-[15px] font-medium tracking-tight" title={title}>
@@ -50,7 +50,7 @@ export function WidgetCard({
             <GripVertical className="size-4 opacity-25" aria-hidden="true" />
             <button
               type="button"
-              className="grid size-7 place-items-center rounded-[3px] text-base-content/50 transition-colors hover:bg-base-content/5 hover:text-base-content"
+              className="grid size-7 place-items-center rounded-[3px] text-base-content/70 transition-colors hover:bg-base-content/5 hover:text-base-content"
               onClick={onEdit}
               aria-label="Edit chart"
               title="Edit chart"
@@ -59,7 +59,7 @@ export function WidgetCard({
             </button>
             <button
               type="button"
-              className="grid size-7 place-items-center rounded-[3px] text-base-content/50 transition-colors hover:bg-error/10 hover:text-error"
+              className="grid size-7 place-items-center rounded-[3px] text-base-content/70 transition-colors hover:bg-error/10 hover:text-error"
               onClick={onDelete}
               aria-label="Delete chart"
               title="Delete chart"
@@ -73,7 +73,7 @@ export function WidgetCard({
       <div className="min-h-0 flex-1 px-2 pb-2 pt-1">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="loading loading-spinner loading-sm text-base-content/25" />
+            <span className="loading loading-spinner loading-sm text-base-content/55" />
           </div>
         ) : tracker ? (
           <ChartRenderer
@@ -84,7 +84,7 @@ export function WidgetCard({
             compact={widget.layout.w <= 5}
           />
         ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-xs text-base-content/50">
+          <div className="flex h-full items-center justify-center px-4 text-center text-xs text-base-content/70">
             This chart points at a tracker that no longer exists.
           </div>
         )}

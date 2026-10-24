@@ -55,7 +55,7 @@ export function TrackersPage() {
     <div
       key={tracker.id}
       className={`group flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
-        tracker.archived ? 'opacity-55' : ''
+        tracker.archived ? 'opacity-70' : ''
       }`}
     >
       <span
@@ -75,25 +75,25 @@ export function TrackersPage() {
           >
             {tracker.name}
           </Link>
-          <span className="eyebrow shrink-0 text-base-content/35">
+          <span className="eyebrow shrink-0 text-base-content/60">
             {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
           </span>
         </div>
-        <p className="eyebrow mt-1 truncate text-[10px] text-base-content/35">
+        <p className="eyebrow mt-1 truncate text-[10px] text-base-content/60">
           {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
             (tracker.kind === 'boolean' ? 'no goal set' : tracker.unit || 'unitless')}
-          <span className="mx-1.5 text-base-content/20">/</span>
+          <span className="mx-1.5 text-base-content/40">/</span>
           since {formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
         </p>
         {tracker.description && (
-          <p className="mt-1 line-clamp-1 text-xs text-base-content/45">{tracker.description}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-base-content/65">{tracker.description}</p>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
         <button
           type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-base-content/5 hover:text-base-content"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
           onClick={() => {
             setEditing(tracker)
             setModalOpen(true)
@@ -105,7 +105,7 @@ export function TrackersPage() {
         </button>
         <button
           type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-base-content/5 hover:text-base-content"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
           onClick={() => toggleArchive(tracker)}
           title={tracker.archived ? 'Restore tracker' : 'Archive tracker'}
           aria-label={tracker.archived ? `Restore ${tracker.name}` : `Archive ${tracker.name}`}
@@ -118,7 +118,7 @@ export function TrackersPage() {
         </button>
         <button
           type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-error/10 hover:text-error"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
           onClick={() => setDeleting(tracker)}
           title="Delete tracker"
           aria-label={`Delete ${tracker.name}`}
@@ -143,7 +143,7 @@ export function TrackersPage() {
           </div>
           <div>
             <p className="eyebrow">archived</p>
-            <p className="num mt-1.5 text-2xl leading-none text-base-content/45">{archived.length}</p>
+            <p className="num mt-1.5 text-2xl leading-none text-base-content/65">{archived.length}</p>
           </div>
         </div>
         <button

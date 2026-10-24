@@ -7,7 +7,7 @@ import { useToast } from '../components/ui/Toast'
 import { api, errorMessage } from '../lib/api'
 import { useMe, useMeta } from '../lib/queries'
 
-const fieldLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/70'
+const fieldLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/75'
 const field = 'input h-10 w-full rounded-[3px] border-base-300'
 
 export function SettingsPage() {
@@ -89,7 +89,7 @@ export function SettingsPage() {
       <div className="grid gap-x-14 gap-y-10 lg:grid-cols-2">
         <section>
           <h2 className="eyebrow border-b border-base-300 pb-2">Profile</h2>
-          <p className="mt-3 text-sm text-base-content/45">How you show up inside Trackete.</p>
+          <p className="mt-3 text-sm text-base-content/65">How you show up inside Trackete.</p>
 
           <form className="mt-5 space-y-4" onSubmit={onProfileSubmit}>
             <label className="block">
@@ -114,7 +114,7 @@ export function SettingsPage() {
 
         <section>
           <h2 className="eyebrow border-b border-base-300 pb-2">Password</h2>
-          <p className="mt-3 text-sm text-base-content/45">Changing it signs out other browsers.</p>
+          <p className="mt-3 text-sm text-base-content/65">Changing it signs out other browsers.</p>
 
           <form className="mt-5 space-y-4" onSubmit={onPasswordSubmit}>
             <label className="block">
@@ -163,7 +163,7 @@ export function SettingsPage() {
 
         <section>
           <h2 className="eyebrow border-b border-base-300 pb-2">Appearance</h2>
-          <p className="mt-3 text-sm text-base-content/45">Follow your system, or pick a side.</p>
+          <p className="mt-3 text-sm text-base-content/65">Follow your system, or pick a side.</p>
           <div className="mt-5">
             <ThemeToggle />
           </div>
@@ -171,20 +171,20 @@ export function SettingsPage() {
 
         <section>
           <h2 className="eyebrow border-b border-base-300 pb-2">About</h2>
-          <p className="mt-3 text-sm text-base-content/45">
+          <p className="mt-3 text-sm text-base-content/65">
             Trackete is open source. Track anything, then build your own dashboards.
           </p>
           <dl className="num mt-5 space-y-2 text-[13px]">
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-base-content/40">Version</dt>
+              <dt className="text-base-content/65">Version</dt>
               <dd>{meta?.version ?? '—'}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-base-content/40">Registration</dt>
+              <dt className="text-base-content/65">Registration</dt>
               <dd>{meta?.allowRegistration === false ? 'closed' : 'open'}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-base-content/40">Storage</dt>
+              <dt className="text-base-content/65">Storage</dt>
               <dd>sqlite</dd>
             </div>
           </dl>
@@ -203,7 +203,7 @@ export function SettingsPage() {
       <section className="flex flex-col gap-4 border-t border-base-300 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-medium">Sign out</h2>
-          <p className="mt-0.5 text-sm text-base-content/45">Ends this session on this device.</p>
+          <p className="mt-0.5 text-sm text-base-content/65">Ends this session on this device.</p>
         </div>
         <button
           type="button"

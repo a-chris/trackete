@@ -8,7 +8,7 @@ import { formatValue } from '../../lib/format'
 import { useEntryMutations } from '../../lib/queries'
 import type { Entry, Tracker } from '../../lib/types'
 
-const entryLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/40'
+const entryLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/65'
 
 interface EntryEditorProps {
   tracker: Tracker
@@ -62,7 +62,7 @@ export function EntryEditor({
       <div className="flex flex-col gap-3 border-b border-base-300 px-0 py-4 sm:py-5">
         <div>
           <h2 className="eyebrow">Add or update a day</h2>
-          <p className="mt-1 text-xs text-base-content/40">
+          <p className="mt-1 text-xs text-base-content/65">
             One value per day — saving the same date replaces the previous value.
           </p>
         </div>
@@ -131,7 +131,7 @@ export function EntryEditor({
       ) : error ? (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-center gap-3 p-6 text-center text-sm text-base-content/60"
+          className="flex flex-wrap items-center justify-center gap-3 p-6 text-center text-sm text-base-content/70"
         >
           <span>Couldn't load entries.{errorDetail ? ` ${errorDetail}` : ''}</span>
           {onRetry && (
@@ -142,7 +142,7 @@ export function EntryEditor({
           )}
         </div>
       ) : entries.length === 0 ? (
-        <p className="p-6 text-center text-sm text-base-content/50">No entries in this range yet.</p>
+        <p className="p-6 text-center text-sm text-base-content/70">No entries in this range yet.</p>
       ) : (
         <div className="max-h-96 overflow-auto">
           <table className="table table-sm">
@@ -157,18 +157,18 @@ export function EntryEditor({
             <tbody>
               {[...entries].reverse().map((entry) => (
                 <tr key={entry.day} className="border-base-300">
-                  <td className="num whitespace-nowrap text-[12px] text-base-content/70">
+                  <td className="num whitespace-nowrap text-[12px] text-base-content/75">
                     {formatDate(entry.day, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </td>
                   <td className="num text-right text-[12px]">
                     {formatValue(entry.value, tracker.unit, tracker.kind)}
                   </td>
-                  <td className="max-w-72 truncate text-xs text-base-content/50">{entry.note || '—'}</td>
+                  <td className="max-w-72 truncate text-xs text-base-content/70">{entry.note || '—'}</td>
                   <td>
                     <div className="flex justify-end gap-0.5">
                       <button
                         type="button"
-                        className="grid size-7 place-items-center rounded-[3px] text-base-content/40 transition-colors hover:bg-base-content/5 hover:text-base-content"
+                        className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
                         onClick={() => {
                           setDay(entry.day)
                           setValue(String(entry.value))
@@ -180,7 +180,7 @@ export function EntryEditor({
                       </button>
                       <button
                         type="button"
-                        className="grid size-7 place-items-center rounded-[3px] text-base-content/40 transition-colors hover:bg-error/10 hover:text-error"
+                        className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
                         onClick={() =>
                           remove.mutate(
                             { trackerId: tracker.id, day: entry.day },

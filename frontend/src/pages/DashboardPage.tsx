@@ -158,12 +158,12 @@ export function DashboardPage() {
           <div className="mt-2 flex items-center gap-3">
             <h1 className="display truncate text-[34px] leading-none sm:text-4xl">{active.name}</h1>
             {active.isDefault && (
-              <span className="eyebrow shrink-0 border border-base-300 px-1.5 py-0.5 text-base-content/50">
+              <span className="eyebrow shrink-0 border border-base-300 px-1.5 py-0.5 text-base-content/70">
                 default
               </span>
             )}
           </div>
-          <p className="num mt-3 text-[11px] uppercase tracking-[0.1em] text-base-content/40">
+          <p className="num mt-3 text-[11px] uppercase tracking-[0.1em] text-base-content/65">
             {widgets.length === 0
               ? 'no charts yet'
               : `${widgets.length} chart${widgets.length === 1 ? '' : 's'}${
@@ -214,7 +214,7 @@ export function DashboardPage() {
             <button
               type="button"
               tabIndex={0}
-              className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/60 transition-colors hover:border-base-content/40 hover:text-base-content"
+              className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/70 transition-colors hover:border-base-content/40 hover:text-base-content"
               aria-label="Dashboard actions"
             >
               <EllipsisVertical className="size-4" />

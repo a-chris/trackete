@@ -15,12 +15,12 @@ interface EmptyStateProps {
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex max-w-xl flex-col items-start gap-5 py-12">
-      <span className="grid size-9 place-items-center rounded-[3px] border border-base-300 text-base-content/60">
+      <span className="grid size-9 place-items-center rounded-[3px] border border-base-300 text-base-content/70">
         <Icon className="size-4" />
       </span>
       <div>
         <h3 className="display text-xl">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-base-content/50">{description}</p>
+        <p className="mt-2 text-sm leading-relaxed text-base-content/70">{description}</p>
       </div>
       {action}
     </div>

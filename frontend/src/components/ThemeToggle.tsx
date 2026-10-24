@@ -38,7 +38,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
           className={`flex h-8 items-center gap-1.5 border-l border-base-300 px-3 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors first:border-l-0 ${
             mode === value
               ? 'bg-base-content text-base-100'
-              : 'text-base-content/45 hover:text-base-content'
+              : 'text-base-content/65 hover:text-base-content'
           }`}
           onClick={() => setMode(value)}
           aria-pressed={mode === value}
