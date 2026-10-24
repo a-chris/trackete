@@ -3,9 +3,11 @@ import type { ChartData, Granularity, TrackerKind } from './types'
 import type { ChartTheme } from './chartTheme'
 import { bucketLabel } from './date'
 import { formatValue } from './format'
-import { CHART_COLORS } from './palette'
+import { memberColor } from './palette'
 
 type SeriesChartType = 'line' | 'bar' | 'area'
+
+const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 function baseOptions(theme: ChartTheme): ApexOptions {
   return {
@@ -45,6 +47,10 @@ export function buildSeriesOptions(
 ): ApexOptions {
   const categories = data.labels.map((label) => bucketLabel(label, granularity))
   const valueFormatter = (value: number) => formatValue(Number(value), unit, kind)
+  // One series per member on a shared tracker; a single author keeps the
+  // tracker's own colour, so unshared charts render exactly as before.
+  const shared = data.series.length > 1
+  const colors = shared ? data.series.map((_, index) => memberColor(index)) : [color]
 
   return {
     ...baseOptions(theme),
@@ -52,7 +58,7 @@ export function buildSeriesOptions(
       ...baseOptions(theme).chart,
       type: chartType,
     },
-    colors: [color],
+    colors,
     series: data.series.map((series) => ({ name: series.name, data: series.data })),
     stroke: {
       curve: kind === 'boolean' ? 'stepline' : 'smooth',
@@ -75,7 +81,9 @@ export function buildSeriesOptions(
     plotOptions: {
       bar: {
         borderRadius: 2,
-        columnWidth: kind === 'boolean' ? '44%' : '58%',
+        // Members sit side by side rather than stacked, so each day shows every
+        // person's own value.
+        columnWidth: shared ? '70%' : kind === 'boolean' ? '44%' : '58%',
         borderRadiusApplication: 'end',
       },
     },
@@ -126,13 +134,16 @@ export function buildDonutOptions(
     chart: { ...baseOptions(theme).chart, type: 'donut' },
     labels: data.labels,
     series,
+    // "Done / Missed" is the unshared boolean donut; member contributions get
+    // one ink per person.
     colors:
-      kind === 'boolean'
+      kind === 'boolean' && data.labels.length === 2 && data.labels[0] === 'Done'
         ? [color, theme.emptyCell]
-        : CHART_COLORS.slice(0, data.labels.length),
+        : data.labels.map((_, index) => memberColor(index)),
     stroke: { width: 2, colors: [theme.surface] },
     dataLabels: { enabled: false },
     legend: {
+      show: data.series.length > 1 || data.labels.length > 4,
       position: 'bottom',
       labels: { colors: theme.muted },
       markers: { size: 5 },
@@ -193,8 +204,10 @@ export function buildHeatmapOptions(
   return {
     ...baseOptions(theme),
     chart: { ...baseOptions(theme).chart, type: 'heatmap' },
+    // Weekday rows keep their three-letter label; a shared tracker replaces them
+    // with one row per member, and those need the full name.
     series: [...heat.rows].reverse().map((row) => ({
-      name: row.name.slice(0, 3),
+      name: weekdayNames.includes(row.name) ? row.name.slice(0, 3) : row.name,
       data: row.data.map((value, index) => ({
         x: bucketLabel(heat.columns[index] ?? '', 'week'),
         y: value,

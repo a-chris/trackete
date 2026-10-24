@@ -9,17 +9,20 @@ import {
   Grid3x3,
   Hash,
   Pencil,
+  Users,
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { ChartRenderer } from '../components/charts/ChartRenderer'
 import { TrackerFormModal } from '../components/trackers/TrackerFormModal'
+import { TrackerSharing } from '../components/trackers/TrackerSharing'
 import { EntryEditor } from '../components/trackers/EntryEditor'
 import { ErrorState } from '../components/ui/ErrorState'
+import { Modal } from '../components/ui/Modal'
 import { Spinner } from '../components/ui/Spinner'
 import { api, errorMessage } from '../lib/api'
 import { rangeStart, todayKey } from '../lib/date'
 import { formatPercent, formatValue, goalLabel } from '../lib/format'
-import { useTrackerData, useTrackers } from '../lib/queries'
+import { useTrackerData, useTrackerSharing, useTrackers } from '../lib/queries'
 import type { ChartType, Granularity, RangePreset } from '../lib/types'
 
 const chartOptions: { value: ChartType; label: string; icon: typeof ChartLine }[] = [
@@ -49,6 +52,9 @@ export function TrackerDetailPage() {
   const [granularity, setGranularity] = useState<Granularity>('auto')
   const [aggregate, setAggregate] = useState<'sum' | 'avg'>('sum')
   const [editOpen, setEditOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const sharing = useTrackerSharing(trackerId)
+  const shared = (sharing.data?.members.length ?? 1) > 1
 
   const to = todayKey()
   const from = useMemo(() => rangeStart(range, new Date()), [range])
@@ -151,14 +157,35 @@ export function TrackerDetailPage() {
           {tracker.archived && (
             <span className="eyebrow border border-base-300 px-1.5 py-0.5">Archived</span>
           )}
-          <button
-            type="button"
-            className="btn btn-sm btn-ghost gap-2 border-base-300"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="size-3.5" />
-            Edit
-          </button>
+          {shared && (
+            <span className="eyebrow inline-flex items-center gap-1.5 border border-base-300 px-1.5 py-0.5">
+              <Users className="size-3" />
+              Shared
+            </span>
+          )}
+          {/* Sharing stays invisible on a single-owner tracker: the invite
+              field on the edit form covers the first invite, and this button
+              appears once the tracker actually has another member. */}
+          {shared && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost gap-2 border-base-300"
+              onClick={() => setShareOpen(true)}
+            >
+              <Users className="size-3.5" />
+              {tracker.role === 'member' ? 'Members' : 'Share'}
+            </button>
+          )}
+          {tracker.role !== 'member' && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost gap-2 border-base-300"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </button>
+          )}
         </div>
       </header>
 
@@ -293,6 +320,14 @@ export function TrackerDetailPage() {
       />
 
       {editOpen && <TrackerFormModal tracker={tracker} onClose={() => setEditOpen(false)} />}
+
+      <Modal
+        open={shareOpen}
+        title={tracker.role === 'member' ? 'Members' : 'Share this tracker'}
+        onClose={() => setShareOpen(false)}
+      >
+        <TrackerSharing trackerId={tracker.id} readOnly={tracker.role === 'member'} />
+      </Modal>
     </div>
   )
 }
