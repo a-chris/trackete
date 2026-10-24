@@ -19,7 +19,10 @@ import (
 var version = "dev"
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
+	}
 	if cfg.Version == "dev" && version != "dev" {
 		cfg.Version = version
 	}

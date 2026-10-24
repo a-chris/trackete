@@ -27,7 +27,7 @@ semantics and API.
 ```bash
 git clone https://github.com/a-chris/trackete.git
 cd trackete
-cp .env.example .env          # then set JWT_SECRET in .env
+cp .env.example .env          # optional: edit it to pin JWT_SECRET, ports, etc.
 docker compose up -d --build
 ```
 
@@ -41,9 +41,12 @@ Release tags publish a multi-arch image to GHCR:
 docker run -d --name trackete \
   -p 8080:8080 \
   -v trackete-data:/data \
-  -e JWT_SECRET="$(openssl rand -hex 32)" \
   ghcr.io/a-chris/trackete:latest
 ```
+
+The signing secret is generated into `/data/.jwt-secret` on first start, so a
+container that owns its volume needs no configuration at all. Pass
+`-e JWT_SECRET=...` if you would rather manage it yourself.
 
 > Until a `v*` tag has been pushed, use the Compose or source build below; the
 > release workflow (`.github/workflows/release.yml`) creates the image.
@@ -64,7 +67,8 @@ STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 
 | Variable | Why it matters |
 | --- | --- |
-| `JWT_SECRET` | **Set this.** Signs session cookies. If unset, a random secret is generated per boot and everyone is logged out on restart. Use `openssl rand -hex 32`. |
+| `JWT_SECRET` | Signs session cookies. Optional: if unset, a secret is generated on first run and stored in `.jwt-secret` next to the database (inside the volume), so sessions survive restarts. Set it explicitly to pin the value, or to rotate (set a new one and delete the file). If the secret cannot be stored, startup fails instead of quietly signing everyone out on the next restart. Use `openssl rand -hex 32`. |
+| `JWT_SECRET_FILE` | Only used when `JWT_SECRET` is empty: path of the file that holds the generated secret. Defaults to `.jwt-secret` in the database directory. |
 | `TRUSTED_PROXIES` | **Set this when behind a reverse proxy** (comma-separated IPs/CIDRs). Empty means no proxy is trusted: the forwarded client IP is ignored (so per-IP login throttling keys on the proxy) and `X-Forwarded-Proto` only marks cookies `Secure` when it comes from a trusted proxy. |
 | `ALLOW_REGISTRATION` | Defaults to `true`. Set `false` once your accounts exist. |
 | `TOKEN_TTL` | Session lifetime, default `720h` (30 days). |

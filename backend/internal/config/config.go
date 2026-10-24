@@ -1,8 +1,7 @@
 package config
 
 import (
-	"crypto/rand"
-	"encoding/hex"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -25,7 +24,7 @@ type Config struct {
 	Version           string
 }
 
-func Load() Config {
+func Load() (Config, error) {
 	c := Config{
 		Port:              env("PORT", "8080"),
 		DBPath:            env("DB_PATH", "./data/trackete.db"),
@@ -76,13 +75,14 @@ func Load() Config {
 	}
 
 	if c.JWTSecret == "" {
-		c.JWTSecret = randomSecret()
-		log.Print("WARN: JWT_SECRET is not set, using an ephemeral secret. " +
-			"Everyone will be logged out when the container restarts. " +
-			"Set JWT_SECRET to keep sessions across restarts.")
+		secret, err := resolveSecret(c.DBPath)
+		if err != nil {
+			return Config{}, fmt.Errorf("session secret: %w (fix the file, or set JWT_SECRET to provide one explicitly)", err)
+		}
+		c.JWTSecret = secret.value
 	}
 
-	return c
+	return c, nil
 }
 
 func env(key, fallback string) string {
@@ -102,12 +102,4 @@ func envBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return v
-}
-
-func randomSecret() string {
-	buf := make([]byte, 32)
-	if _, err := rand.Read(buf); err != nil {
-		log.Fatalf("generate secret: %v", err)
-	}
-	return hex.EncodeToString(buf)
 }

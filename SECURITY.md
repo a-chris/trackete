@@ -14,8 +14,11 @@ notes if you want it.
 
 Trackete is designed for self-hosting. Before exposing it to the internet:
 
-- Set `JWT_SECRET` to a long random value (`openssl rand -hex 32`). Without it,
-  sessions are invalidated on every restart.
+- `JWT_SECRET` is optional: a random secret is generated on first start and
+  stored in `.jwt-secret` next to the database, so sessions survive restarts.
+  Set it explicitly if you would rather manage the value yourself; rotate by
+  setting a new one and deleting the stored file. The process refuses to start
+  when the secret cannot be stored, rather than degrading to a per-boot secret.
 - Terminate TLS at a reverse proxy and forward `X-Forwarded-Proto: https` so
   session cookies are marked `Secure`.
 - Set `ALLOW_REGISTRATION=false` once your accounts exist.
