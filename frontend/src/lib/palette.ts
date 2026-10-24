@@ -43,3 +43,10 @@ export const TRACKER_ICONS = [
   '🚲',
   '🧹',
 ]
+
+// Member colours: shared trackers draw one series per person, so each member
+// needs a stable ink. Reusing the chart palette keeps the ink-on-paper system
+// intact instead of introducing a second colour language.
+export function memberColor(index: number): string {
+  return CHART_COLORS[index % CHART_COLORS.length]
+}

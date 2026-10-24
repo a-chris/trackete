@@ -3,7 +3,7 @@ import { Goal, Hash, ToggleLeft } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { useToast } from '../ui/Toast'
 import { errorMessage } from '../../lib/api'
-import { useTrackerMutations } from '../../lib/queries'
+import { useInviteSuggestions, useTrackerMutations } from '../../lib/queries'
 import { TRACKER_COLORS, TRACKER_ICONS } from '../../lib/palette'
 import type { GoalPeriod, GoalType, Tracker, TrackerInput, TrackerKind } from '../../lib/types'
 
@@ -26,6 +26,7 @@ const periodOptions: { value: GoalPeriod; label: string }[] = [
 export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
   const toast = useToast()
   const { create, update } = useTrackerMutations()
+  const suggestions = useInviteSuggestions()
 
   // Mount this component only while the modal is open: the state below is the
   // initial state of one editing session.
@@ -39,6 +40,8 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
   const [goalType, setGoalType] = useState<GoalType>(tracker?.goal?.type ?? 'at_least')
   const [goalValue, setGoalValue] = useState(tracker?.goal ? String(tracker.goal.value) : '1')
   const [goalPeriod, setGoalPeriod] = useState<GoalPeriod>(tracker?.goal?.period ?? 'day')
+  // Comma-separated so one field can take a handful of addresses at once.
+  const [shareWith, setShareWith] = useState('')
   const [error, setError] = useState('')
 
   const pending = create.isPending || update.isPending
@@ -74,6 +77,12 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         : null,
       archived: tracker?.archived ?? false,
     }
+
+    const invitees = shareWith
+      .split(/[,\s]+/)
+      .map((address) => address.trim())
+      .filter(Boolean)
+    if (invitees.length > 0) input.shareWith = invitees
 
     const onSuccess = () => {
       toast.push('success', tracker ? 'Tracker updated.' : 'Tracker created.')
@@ -276,6 +285,30 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
             </div>
           )}
         </div>
+
+        <label className="form-control">
+          <span className={label}>
+            Invite people <span className="text-base-content/60">(optional)</span>
+          </span>
+          <input
+            className={field}
+            value={shareWith}
+            onChange={(event) => setShareWith(event.target.value)}
+            placeholder="friend@example.com, partner@example.com"
+            list="tracker-share-suggestions"
+          />
+          <datalist id="tracker-share-suggestions">
+            {(suggestions.data ?? []).map((suggestion) => (
+              <option key={suggestion.email} value={suggestion.email}>
+                {suggestion.name}
+              </option>
+            ))}
+          </datalist>
+          <span className="mt-1.5 block text-xs leading-relaxed text-base-content/65">
+            They receive a link to join and can log their own entries. You keep control of the
+            tracker and the member list.
+          </span>
+        </label>
 
         <div>
           <span className={label}>Colour</span>

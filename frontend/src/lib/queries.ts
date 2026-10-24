@@ -103,6 +103,55 @@ export function useEntryMutations() {
   return { save, remove }
 }
 
+export function useTrackerSharing(trackerId: string | undefined) {
+  return useQuery({
+    queryKey: ['tracker-sharing', trackerId],
+    queryFn: () => api.trackerSharing(trackerId!),
+    enabled: Boolean(trackerId),
+  })
+}
+
+export function useInviteSuggestions() {
+  return useQuery({
+    queryKey: ['invite-suggestions'],
+    queryFn: api.inviteSuggestions,
+    staleTime: 60_000,
+  })
+}
+
+export function useSharingMutations(trackerId: string) {
+  const queryClient = useQueryClient()
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['tracker-sharing', trackerId] })
+    void queryClient.invalidateQueries({ queryKey: ['invite-suggestions'] })
+    void queryClient.invalidateQueries({ queryKey: ['trackers'] })
+  }
+
+  return {
+    invite: useMutation({
+      mutationFn: (email: string) => api.invite(trackerId, email),
+      onSuccess: invalidate,
+    }),
+    resend: useMutation({
+      mutationFn: (invitationId: string) => api.resendInvitation(trackerId, invitationId),
+      onSuccess: invalidate,
+    }),
+    removeMember: useMutation({
+      mutationFn: (memberId: string) => api.removeMember(trackerId, memberId),
+      onSuccess: invalidate,
+    }),
+  }
+}
+
+export function useInvitation(token: string | undefined) {
+  return useQuery({
+    queryKey: ['invitation', token],
+    queryFn: () => api.invitation(token!),
+    enabled: Boolean(token),
+    retry: false,
+  })
+}
+
 export function useTrackerMutations() {
   const queryClient = useQueryClient()
   const invalidate = () => {

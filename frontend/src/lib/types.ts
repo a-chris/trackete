@@ -7,6 +7,8 @@ export type Granularity = 'auto' | 'day' | 'week' | 'month'
 export type Aggregate = 'sum' | 'avg'
 export type StatMetric = 'total' | 'average' | 'count' | 'streak'
 export type ThemeMode = 'system' | 'light' | 'dark'
+export type TrackerRole = 'owner' | 'member'
+export type InvitationStatus = 'pending' | 'delivered' | 'accepted' | 'rejected' | 'removed'
 
 export interface User {
   id: string
@@ -31,12 +33,17 @@ export interface Tracker {
   unit: string
   goal: Goal | null
   archived: boolean
+  /** How the signed-in user relates to this tracker; the owner manages it. */
+  role?: TrackerRole
   createdAt: string
   updatedAt: string
 }
 
 export interface Entry {
   trackerId?: string
+  /** Who logged the value. Absent when the entry is already the caller's own. */
+  userId?: string
+  userName?: string
   day: string
   value: number
   note: string
@@ -52,6 +59,49 @@ export interface TrackerInput {
   unit: string
   goal: Goal | null
   archived: boolean
+  /** Optional invite list. Omitted means the tracker is created unshared. */
+  shareWith?: string[]
+}
+
+export interface TrackerMember {
+  userId: string
+  email: string
+  name: string
+  role: TrackerRole
+  joinedAt: string
+}
+
+export interface Invitation {
+  id: string
+  trackerId: string
+  trackerName?: string
+  email: string
+  status: InvitationStatus
+  createdAt: string
+  expiresAt: string
+}
+
+export interface TrackerSharing {
+  trackerId: string
+  role: TrackerRole
+  members: TrackerMember[]
+  invitations: Invitation[]
+}
+
+export interface InviteSuggestion {
+  email: string
+  name?: string
+}
+
+export interface InvitationDetails {
+  id: string
+  trackerId: string
+  trackerName: string
+  email: string
+  status: InvitationStatus
+  expiresAt: string
+  needsAccount: boolean
+  signedInEmail?: string
 }
 
 export interface WidgetConfig {

@@ -5,7 +5,7 @@ import { useToast } from '../ui/Toast'
 import { errorMessage } from '../../lib/api'
 import { formatDate, todayKey } from '../../lib/date'
 import { formatValue } from '../../lib/format'
-import { useEntryMutations } from '../../lib/queries'
+import { useEntryMutations, useMe } from '../../lib/queries'
 import type { Entry, Tracker } from '../../lib/types'
 
 const entryLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/65'
@@ -31,7 +31,14 @@ export function EntryEditor({
 }: EntryEditorProps) {
   const toast = useToast()
   const { save, remove } = useEntryMutations()
+  const me = useMe()
   const today = todayKey()
+
+  // A shared tracker shows who logged each day. Attribution is missing for the
+  // caller's own entries, so anything without an author counts as theirs.
+  const authors = new Set(entries.map((entry) => entry.userId).filter(Boolean))
+  const shared = authors.size > 1
+  const canChange = (entry: Entry) => !entry.userId || entry.userId === me.data?.id
 
   const [day, setDay] = useState(today)
   const [value, setValue] = useState(tracker.kind === 'boolean' ? '1' : '')
@@ -63,7 +70,9 @@ export function EntryEditor({
         <div>
           <h2 className="eyebrow">Add or update a day</h2>
           <p className="mt-1 text-xs text-base-content/65">
-            One value per day — saving the same date replaces the previous value.
+            {shared && me.data
+              ? `Logging as ${me.data.name || me.data.email}. One value per day — saving the same date replaces your previous value.`
+              : 'One value per day — saving the same date replaces the previous value.'}
           </p>
         </div>
         <form className="flex flex-wrap items-end gap-2" onSubmit={upsert}>
@@ -149,6 +158,7 @@ export function EntryEditor({
             <thead className="sticky top-0 z-10 bg-base-100">
               <tr className="border-base-300">
                 <th className="eyebrow font-normal">Day</th>
+                {shared && <th className="eyebrow font-normal">Member</th>}
                 <th className="eyebrow text-right font-normal">Value</th>
                 <th className="eyebrow font-normal">Note</th>
                 <th className="w-12" />
@@ -156,45 +166,54 @@ export function EntryEditor({
             </thead>
             <tbody>
               {[...entries].reverse().map((entry) => (
-                <tr key={entry.day} className="border-base-300">
+                <tr key={`${entry.userId ?? 'me'}-${entry.day}`} className="border-base-300">
                   <td className="num whitespace-nowrap text-[12px] text-base-content/75">
                     {formatDate(entry.day, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </td>
+                  {shared && (
+                    <td className="max-w-32 truncate text-xs text-base-content/70">
+                      {entry.userId === me.data?.id ? 'You' : entry.userName || '—'}
+                    </td>
+                  )}
                   <td className="num text-right text-[12px]">
                     {formatValue(entry.value, tracker.unit, tracker.kind)}
                   </td>
                   <td className="max-w-72 truncate text-xs text-base-content/70">{entry.note || '—'}</td>
                   <td>
-                    <div className="flex justify-end gap-0.5">
-                      <button
-                        type="button"
-                        className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
-                        onClick={() => {
-                          setDay(entry.day)
-                          setValue(String(entry.value))
-                          setNote(entry.note)
-                        }}
-                        aria-label={`Edit ${entry.day}`}
-                      >
-                        <Pencil className="size-3" />
-                      </button>
-                      <button
-                        type="button"
-                        className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
-                        onClick={() =>
-                          remove.mutate(
-                            { trackerId: tracker.id, day: entry.day },
-                            {
-                              onSuccess: () => toast.push('success', 'Entry deleted.'),
-                              onError: (error) => toast.push('error', errorMessage(error)),
-                            },
-                          )
-                        }
-                        aria-label={`Delete ${entry.day}`}
-                      >
-                        <Trash className="size-3" />
-                      </button>
-                    </div>
+                    {/* Members may only change their own rows; the API enforces
+                        the same rule, this just keeps the buttons honest. */}
+                    {canChange(entry) && (
+                      <div className="flex justify-end gap-0.5">
+                        <button
+                          type="button"
+                          className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
+                          onClick={() => {
+                            setDay(entry.day)
+                            setValue(String(entry.value))
+                            setNote(entry.note)
+                          }}
+                          aria-label={`Edit ${entry.day}`}
+                        >
+                          <Pencil className="size-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="grid size-7 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
+                          onClick={() =>
+                            remove.mutate(
+                              { trackerId: tracker.id, day: entry.day },
+                              {
+                                onSuccess: () => toast.push('success', 'Entry deleted.'),
+                                onError: (error) => toast.push('error', errorMessage(error)),
+                              },
+                            )
+                          }
+                          aria-label={`Delete ${entry.day}`}
+                        >
+                          <Trash className="size-3" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
