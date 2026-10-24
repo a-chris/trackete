@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell'
 import { RequireAuth } from './components/RequireAuth'
 import { FullPageSpinner } from './components/ui/Spinner'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
+import { InvitePage } from './pages/InvitePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { TrackersPage } from './pages/TrackersPage'
@@ -22,6 +23,8 @@ export function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        {/* Public: the signed token is the credential, so no session is needed. */}
+        <Route path="/invite/:token" element={<InvitePage />} />
 
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>

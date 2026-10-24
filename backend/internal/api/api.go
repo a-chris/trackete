@@ -13,6 +13,8 @@ import (
 
 	"github.com/a-chris/trackete/backend/internal/auth"
 	"github.com/a-chris/trackete/backend/internal/config"
+	"github.com/a-chris/trackete/backend/internal/mailer"
+	"github.com/a-chris/trackete/backend/internal/model"
 	"github.com/a-chris/trackete/backend/internal/store"
 )
 
@@ -26,6 +28,7 @@ type API struct {
 	cfg     config.Config
 	store   *store.Store
 	limiter *attemptLimiter
+	mail    *mailer.Mailer
 }
 
 func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
@@ -33,6 +36,15 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 		cfg:     cfg,
 		store:   st,
 		limiter: newAttemptLimiter(10, 5*time.Minute),
+		mail: mailer.New(mailer.Config{
+			Transport: cfg.MailTransport,
+			Host:      cfg.SMTPHost,
+			Port:      cfg.SMTPPort,
+			Username:  cfg.SMTPUsername,
+			Password:  cfg.SMTPPassword,
+			From:      cfg.MailFrom,
+			FilePath:  cfg.MailFile,
+		}),
 	}
 
 	r := gin.New()
@@ -61,6 +73,12 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 	apiGroup.POST("/auth/login", a.limiter.guard(a.login))
 	apiGroup.POST("/auth/logout", a.logout)
 
+	// Invitation links arrive by email, so these stay public. The token is
+	// signed with the application secret and is the only credential needed.
+	apiGroup.GET("/invitations/:token", a.getInvitation)
+	apiGroup.POST("/invitations/:token/accept", a.acceptInvitation)
+	apiGroup.POST("/invitations/:token/reject", a.rejectInvitation)
+
 	protected := apiGroup.Group("", a.requireAuth())
 	{
 		protected.GET("/auth/me", a.me)
@@ -78,6 +96,11 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 		protected.GET("/trackers/:id/entries", a.listEntries)
 		protected.PUT("/trackers/:id/entries/:day", a.upsertEntry)
 		protected.DELETE("/trackers/:id/entries/:day", a.deleteEntry)
+		protected.GET("/trackers/:id/sharing", a.trackerSharing)
+		protected.POST("/trackers/:id/invitations", a.createInvitation)
+		protected.POST("/trackers/:id/invitations/:inviteId/resend", a.resendInvitation)
+		protected.DELETE("/trackers/:id/members/:memberId", a.removeMember)
+		protected.GET("/sharing/suggestions", a.inviteSuggestions)
 
 		protected.GET("/dashboards", a.listDashboards)
 		protected.POST("/dashboards", a.createDashboard)
@@ -114,6 +137,25 @@ func userID(c *gin.Context) string {
 		}
 	}
 	return ""
+}
+
+// optionalUser resolves the session cookie when one was sent, without failing
+// the request. Public pages (invitation acceptance) use it to show who is
+// already signed in.
+func (a *API) optionalUser(c *gin.Context) *model.User {
+	token, err := c.Cookie(sessionCookie)
+	if err != nil || token == "" {
+		return nil
+	}
+	uid, version, err := auth.ParseToken(a.cfg.JWTSecret, token)
+	if err != nil {
+		return nil
+	}
+	user, err := a.store.UserByID(c.Request.Context(), uid)
+	if err != nil || user.TokenVersion != version {
+		return nil
+	}
+	return user
 }
 
 // ---- responses -------------------------------------------------------------

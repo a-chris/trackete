@@ -78,6 +78,9 @@ export function TrackersPage() {
           <span className="eyebrow shrink-0 text-base-content/60">
             {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
           </span>
+          {tracker.role === 'member' && (
+            <span className="eyebrow shrink-0 text-base-content/60">shared</span>
+          )}
         </div>
         <p className="eyebrow mt-1 truncate text-[10px] text-base-content/60">
           {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
@@ -90,6 +93,9 @@ export function TrackersPage() {
         )}
       </div>
 
+      {/* Metadata, archiving and deletion belong to the owner; a member only
+          sees their own entries and the charts. */}
+      {tracker.role !== 'member' && (
       <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
         <button
           type="button"
@@ -126,6 +132,7 @@ export function TrackersPage() {
           <Trash className="size-3.5" />
         </button>
       </div>
+      )}
     </div>
   )
 
