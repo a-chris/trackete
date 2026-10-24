@@ -11,25 +11,27 @@ export interface ChartTheme {
 }
 
 // Apex paints on canvas, so it needs plain sRGB values rather than the oklch
-// design tokens DaisyUI exposes as CSS variables.
+// design tokens DaisyUI exposes as CSS variables. These track the paper/ink
+// palette in index.css: warm paper, near-black ink, hairline gridlines, and no
+// chrome colour — only the series itself is coloured.
 const palettes: Record<'light' | 'dark', ChartTheme> = {
   light: {
     mode: 'light',
-    text: '#272932',
-    muted: '#6b7280',
-    grid: '#e5e7eb',
-    surface: '#ffffff',
-    primary: '#6366f1',
-    emptyCell: '#ececf1',
+    text: '#1c1a17',
+    muted: '#8b867c',
+    grid: '#e7e4dc',
+    surface: '#fbfaf7',
+    primary: '#1c1a17',
+    emptyCell: '#efede6',
   },
   dark: {
     mode: 'dark',
-    text: '#e7e8ee',
-    muted: '#9aa1b1',
-    grid: '#2f3441',
-    surface: '#191b23',
-    primary: '#8b93f8',
-    emptyCell: '#2b2f3a',
+    text: '#eeeae1',
+    muted: '#8f8a80',
+    grid: '#2b2723',
+    surface: '#171512',
+    primary: '#eeeae1',
+    emptyCell: '#26221e',
   },
 }
 

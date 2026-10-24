@@ -38,6 +38,8 @@ const chartChoices: { value: ChartType; label: string; hint: string; icon: typeo
   { value: 'stat', label: 'Stat', hint: 'One headline number', icon: Hash },
 ]
 
+const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/45'
+
 const ranges: { value: RangePreset; label: string }[] = [
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
@@ -121,7 +123,7 @@ export function WidgetFormModal({
       }
     >
       {trackers.length === 0 ? (
-        <p className="text-sm text-base-content/60">
+        <p className="text-sm text-base-content/50">
           Create a tracker first — charts are always built on top of one tracker.
         </p>
       ) : (
@@ -130,9 +132,9 @@ export function WidgetFormModal({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">Tracker</span>
+              <span className={label}>Tracker</span>
               <select
-                className="select w-full"
+                className="select w-full rounded-[3px] border-base-300"
                 value={trackerId}
                 onChange={(event) => setTrackerId(event.target.value)}
                 required
@@ -145,11 +147,11 @@ export function WidgetFormModal({
               </select>
             </label>
             <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">
-                Title <span className="font-normal text-base-content/40">(optional)</span>
+              <span className={label}>
+                Title <span className="text-base-content/25">(optional)</span>
               </span>
               <input
-                className="input w-full"
+                className="input w-full rounded-[3px] border-base-300"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder={tracker?.name ?? 'Chart title'}
@@ -159,23 +161,23 @@ export function WidgetFormModal({
           </div>
 
           <div>
-            <span className="mb-2 block text-sm font-medium">Chart type</span>
+            <span className={label}>Chart type</span>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {chartChoices.map(({ value, label, hint, icon: Icon }) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setChartType(value)}
-                  className={`rounded-box border p-3 text-left transition ${
+                  className={`rounded-[3px] border px-3 py-2.5 text-left transition ${
                     chartType === value
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                      ? 'border-base-content bg-base-content/5'
                       : 'border-base-300 hover:border-base-content/30'
                   }`}
                   aria-pressed={chartType === value}
                 >
-                  <Icon className="size-4 text-primary" />
-                  <p className="mt-1.5 text-sm font-medium">{label}</p>
-                  <p className="text-[11px] leading-tight text-base-content/50">{hint}</p>
+                  <Icon className="size-3.5 text-base-content/50" />
+                  <p className="mt-1.5 text-[13px] font-medium">{label}</p>
+                  <p className="text-[11px] leading-tight text-base-content/40">{hint}</p>
                 </button>
               ))}
             </div>
@@ -183,9 +185,9 @@ export function WidgetFormModal({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">Range</span>
+              <span className={label}>Range</span>
               <select
-                className="select w-full"
+                className="select w-full rounded-[3px] border-base-300"
                 value={range}
                 onChange={(event) => setRange(event.target.value as RangePreset)}
               >
@@ -199,9 +201,9 @@ export function WidgetFormModal({
 
             {chartType === 'stat' ? (
               <label className="form-control">
-                <span className="mb-1.5 block text-sm font-medium">Metric</span>
+                <span className={label}>Metric</span>
                 <select
-                  className="select w-full"
+                  className="select w-full rounded-[3px] border-base-300"
                   value={metric}
                   onChange={(event) => setMetric(event.target.value as StatMetric)}
                 >
@@ -213,9 +215,9 @@ export function WidgetFormModal({
               </label>
             ) : (
               <label className="form-control">
-                <span className="mb-1.5 block text-sm font-medium">Grouping</span>
+                <span className={label}>Grouping</span>
                 <select
-                  className="select w-full"
+                  className="select w-full rounded-[3px] border-base-300"
                   value={granularity}
                   onChange={(event) => setGranularity(event.target.value as Granularity)}
                 >
@@ -229,9 +231,9 @@ export function WidgetFormModal({
 
             {tracker?.kind === 'numeric' && chartType !== 'stat' ? (
               <label className="form-control">
-                <span className="mb-1.5 block text-sm font-medium">Aggregate</span>
+                <span className={label}>Aggregate</span>
                 <select
-                  className="select w-full"
+                  className="select w-full rounded-[3px] border-base-300"
                   value={aggregate}
                   onChange={(event) => setAggregate(event.target.value as Aggregate)}
                 >
@@ -244,7 +246,7 @@ export function WidgetFormModal({
             )}
           </div>
 
-          <p className="text-xs text-base-content/50">
+          <p className="text-xs text-base-content/40">
             Charts update automatically. You can drag and resize them on the dashboard while edit mode is on.
           </p>
         </form>

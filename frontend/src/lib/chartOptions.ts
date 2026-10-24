@@ -22,7 +22,10 @@ function baseOptions(theme: ChartTheme): ApexOptions {
     dataLabels: { enabled: false },
     grid: {
       borderColor: theme.grid,
-      strokeDashArray: 4,
+      // Solid hairlines: a dashed grid is the visual signature of a generic
+      // dashboard template. One weight, one colour, no rhythm.
+      strokeDashArray: 0,
+      xaxis: { lines: { show: false } },
       padding: { left: 6, right: 12, top: 0, bottom: 0 },
     },
     tooltip: { theme: theme.mode },
@@ -38,6 +41,7 @@ export function buildSeriesOptions(
   chartType: SeriesChartType,
   granularity: Granularity,
   theme: ChartTheme,
+  compact = false,
 ): ApexOptions {
   const categories = data.labels.map((label) => bucketLabel(label, granularity))
   const valueFormatter = (value: number) => formatValue(Number(value), unit, kind)
@@ -52,7 +56,7 @@ export function buildSeriesOptions(
     series: data.series.map((series) => ({ name: series.name, data: series.data })),
     stroke: {
       curve: kind === 'boolean' ? 'stepline' : 'smooth',
-      width: chartType === 'bar' ? 0 : 2.5,
+      width: chartType === 'bar' ? 0 : 2,
       lineCap: 'round',
     },
     fill:
@@ -61,8 +65,8 @@ export function buildSeriesOptions(
             type: 'gradient',
             gradient: {
               shadeIntensity: 1,
-              opacityFrom: 0.35,
-              opacityTo: 0.02,
+              opacityFrom: 0.22,
+              opacityTo: 0.01,
               stops: [0, 95],
             },
           }
@@ -70,18 +74,18 @@ export function buildSeriesOptions(
     markers: { size: 0, strokeWidth: 2, hover: { size: 4 } },
     plotOptions: {
       bar: {
-        borderRadius: 6,
-        columnWidth: kind === 'boolean' ? '42%' : '55%',
+        borderRadius: 2,
+        columnWidth: kind === 'boolean' ? '44%' : '58%',
         borderRadiusApplication: 'end',
       },
     },
     xaxis: {
       categories,
-      tickAmount: Math.min(8, Math.max(2, categories.length)),
+      tickAmount: Math.min(compact ? 2 : 4, Math.max(2, categories.length)),
       axisBorder: { show: false },
       axisTicks: { show: false },
       labels: {
-        rotate: -45,
+        rotate: 0,
         rotateAlways: false,
         trim: false,
         style: { colors: theme.muted, fontSize: '10px' },
@@ -131,22 +135,22 @@ export function buildDonutOptions(
     legend: {
       position: 'bottom',
       labels: { colors: theme.muted },
-      markers: { size: 6 },
+      markers: { size: 5 },
       itemMargin: { horizontal: 8, vertical: 2 },
     },
     plotOptions: {
       pie: {
         donut: {
-          size: '68%',
+          size: '72%',
           labels: {
             show: true,
-            name: { color: theme.muted, fontSize: '12px' },
-            value: { color: theme.text, fontSize: '20px', fontWeight: 600 },
+            name: { color: theme.muted, fontSize: '10px' },
+            value: { color: theme.text, fontSize: '22px', fontWeight: 500 },
             total: {
               show: true,
               label: kind === 'boolean' ? 'Days' : 'Total',
               color: theme.muted,
-              fontSize: '12px',
+              fontSize: '10px',
               formatter: () => (kind === 'boolean' ? formatValue(total) : formatValue(total, unit)),
             },
           },
@@ -201,7 +205,7 @@ export function buildHeatmapOptions(
     stroke: { width: 2, colors: [theme.surface] },
     plotOptions: {
       heatmap: {
-        radius: 4,
+        radius: 2,
         enableShades: false,
         colorScale: { ranges },
       },

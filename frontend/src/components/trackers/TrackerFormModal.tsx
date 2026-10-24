@@ -12,6 +12,11 @@ interface TrackerFormModalProps {
   onClose: () => void
 }
 
+const label = 'mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/45'
+const field = 'input w-full rounded-[3px] border-base-300'
+const subLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/40'
+const pick = 'rounded-[3px] border p-3.5 text-left transition'
+
 const periodOptions: { value: GoalPeriod; label: string }[] = [
   { value: 'day', label: 'per day' },
   { value: 'week', label: 'per week' },
@@ -106,9 +111,9 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
 
         <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
           <label className="form-control">
-            <span className="mb-1.5 block text-sm font-medium">Name</span>
+            <span className={label}>Name</span>
             <input
-              className="input w-full"
+              className={field}
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Beers, Weight, Meditation…"
@@ -118,15 +123,17 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
             />
           </label>
           <div className="form-control">
-            <span className="mb-1.5 block text-sm font-medium">Icon</span>
+            <span className={label}>Icon</span>
             <div className="flex flex-wrap gap-1.5">
               {TRACKER_ICONS.slice(0, 8).map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => setIcon(emoji)}
-                  className={`grid size-9 place-items-center rounded-lg border text-lg transition ${
-                    icon === emoji ? 'border-primary bg-primary/10' : 'border-base-300 hover:bg-base-200'
+                  className={`grid size-8 place-items-center rounded-[3px] border text-[15px] transition ${
+                    icon === emoji
+                      ? 'border-base-content bg-base-content/5'
+                      : 'border-base-300 hover:border-base-content/30'
                   }`}
                   aria-label={`Use ${emoji}`}
                   aria-pressed={icon === emoji}
@@ -139,11 +146,11 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         </div>
 
         <label className="form-control">
-          <span className="mb-1.5 block text-sm font-medium">
-            Description <span className="font-normal text-base-content/40">(optional)</span>
+          <span className={label}>
+            Description <span className="text-base-content/25">(optional)</span>
           </span>
           <input
-            className="input w-full"
+            className={field}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="What exactly are you tracking?"
@@ -152,7 +159,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         </label>
 
         <div>
-          <span className="mb-2 block text-sm font-medium">What kind of data?</span>
+          <span className={label}>What kind of data?</span>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -162,32 +169,32 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                 setGoalPeriod('day')
                 setGoalValue('1')
               }}
-              className={`rounded-box border p-4 text-left transition ${
+              className={`${pick} ${
                 kind === 'boolean'
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  ? 'border-base-content bg-base-content/5'
                   : 'border-base-300 hover:border-base-content/30'
               }`}
               aria-pressed={kind === 'boolean'}
             >
-              <ToggleLeft className="size-5 text-primary" />
-              <p className="mt-2 font-medium">Yes / No</p>
-              <p className="mt-0.5 text-xs text-base-content/60">
+              <ToggleLeft className="size-4 text-base-content/50" />
+              <p className="mt-2 text-sm font-medium">Yes / No</p>
+              <p className="mt-1 text-xs leading-relaxed text-base-content/45">
                 A habit you did or did not do today.
               </p>
             </button>
             <button
               type="button"
               onClick={() => setKind('numeric')}
-              className={`rounded-box border p-4 text-left transition ${
+              className={`${pick} ${
                 kind === 'numeric'
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                  ? 'border-base-content bg-base-content/5'
                   : 'border-base-300 hover:border-base-content/30'
               }`}
               aria-pressed={kind === 'numeric'}
             >
-              <Hash className="size-5 text-primary" />
-              <p className="mt-2 font-medium">Number</p>
-              <p className="mt-0.5 text-xs text-base-content/60">
+              <Hash className="size-4 text-base-content/50" />
+              <p className="mt-2 text-sm font-medium">Number</p>
+              <p className="mt-1 text-xs leading-relaxed text-base-content/45">
                 A value per day, like 3 beers, 72.5 kg or 30 minutes.
               </p>
             </button>
@@ -196,11 +203,11 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
 
         {kind === 'numeric' && (
           <label className="form-control">
-            <span className="mb-1.5 block text-sm font-medium">
-              Unit <span className="font-normal text-base-content/40">(optional)</span>
+            <span className={label}>
+              Unit <span className="text-base-content/25">(optional)</span>
             </span>
             <input
-              className="input w-full sm:max-w-xs"
+              className={`${field} sm:max-w-xs`}
               value={unit}
               onChange={(event) => setUnit(event.target.value)}
               placeholder="beers, kg, minutes…"
@@ -209,10 +216,10 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
           </label>
         )}
 
-        <div className="rounded-box border border-base-300 bg-base-200/40 p-4">
+        <div className="border-y border-base-300 py-3">
           <label className="flex cursor-pointer items-center justify-between gap-4">
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <Goal className="size-4 text-primary" />
+            <span className="flex items-center gap-2 text-[13px] font-medium">
+              <Goal className="size-3.5 text-base-content/50" />
               Add a goal
             </span>
             <input
@@ -224,11 +231,11 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
           </label>
 
           {hasGoal && (
-            <div className="mt-4 grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
+            <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr_1fr]">
               <label className="form-control">
-                <span className="mb-1 block text-xs font-medium text-base-content/60">Target</span>
+                <span className={subLabel}>Target</span>
                 <select
-                  className="select select-sm"
+                  className="select select-sm w-auto rounded-[3px] border-base-300"
                   value={goalType}
                   onChange={(event) => setGoalType(event.target.value as GoalType)}
                 >
@@ -237,12 +244,12 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                 </select>
               </label>
               <label className="form-control">
-                <span className="mb-1 block text-xs font-medium text-base-content/60">
-                  Value {unit && <span className="text-base-content/40">({unit})</span>}
+                <span className={subLabel}>
+                  Value {unit && <span className="text-base-content/25">({unit})</span>}
                 </span>
                 <input
                   type="number"
-                  className="input input-sm w-full"
+                  className="input input-sm num w-full rounded-[3px] border-base-300"
                   value={goalValue}
                   onChange={(event) => setGoalValue(event.target.value)}
                   min={0}
@@ -250,9 +257,9 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                 />
               </label>
               <label className="form-control">
-                <span className="mb-1 block text-xs font-medium text-base-content/60">Period</span>
+                <span className={subLabel}>Period</span>
                 <select
-                  className="select select-sm"
+                  className="select select-sm w-auto rounded-[3px] border-base-300"
                   value={goalPeriod}
                   onChange={(event) => setGoalPeriod(event.target.value as GoalPeriod)}
                 >
@@ -263,7 +270,7 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
                   ))}
                 </select>
               </label>
-              <p className="text-xs text-base-content/50 sm:col-span-3">
+              <p className="text-xs text-base-content/40 sm:col-span-3">
                 Example: “at most 5 per week” for beers, or “at least 1 per day” for meditation.
               </p>
             </div>
@@ -271,15 +278,17 @@ export function TrackerFormModal({ tracker, onClose }: TrackerFormModalProps) {
         </div>
 
         <div>
-          <span className="mb-2 block text-sm font-medium">Colour</span>
+          <span className={label}>Colour</span>
           <div className="flex flex-wrap gap-2">
             {TRACKER_COLORS.map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => setColor(option.value)}
-                className={`size-8 rounded-full border-2 transition ${
-                  color === option.value ? 'border-base-content scale-110' : 'border-transparent'
+                className={`size-7 rounded-[2px] transition ${
+                  color === option.value
+                    ? 'outline outline-2 outline-offset-2 outline-base-content'
+                    : 'hover:opacity-80'
                 }`}
                 style={{ backgroundColor: option.value }}
                 aria-label={option.name}

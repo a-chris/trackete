@@ -5,36 +5,40 @@
   logs: false;
 }
 
+/* Trackete's look: ink on paper.
+   The chrome is monochrome — near-black ink in light mode, paper-white in dark.
+   Colour is reserved for data (tracker colours, charts) and goal states, so a
+   tinted pixel always means "this is your data", never "this is a button". */
 @plugin "daisyui/theme" {
   name: "trackete-light";
   default: true;
   prefersdark: false;
   color-scheme: light;
 
-  --color-base-100: oklch(99.5% 0.002 265);
-  --color-base-200: oklch(97% 0.004 265);
-  --color-base-300: oklch(92.5% 0.007 265);
-  --color-base-content: oklch(26% 0.018 265);
-  --color-primary: oklch(58% 0.2 277);
-  --color-primary-content: oklch(98% 0.01 277);
-  --color-secondary: oklch(70% 0.12 183);
-  --color-secondary-content: oklch(20% 0.03 183);
-  --color-accent: oklch(78% 0.15 72);
-  --color-accent-content: oklch(24% 0.05 72);
-  --color-neutral: oklch(34% 0.02 265);
-  --color-neutral-content: oklch(98% 0.005 265);
-  --color-info: oklch(62% 0.15 245);
-  --color-info-content: oklch(98% 0.01 245);
-  --color-success: oklch(63% 0.15 155);
-  --color-success-content: oklch(98% 0.02 155);
-  --color-warning: oklch(80% 0.15 85);
-  --color-warning-content: oklch(25% 0.05 85);
-  --color-error: oklch(58% 0.2 25);
-  --color-error-content: oklch(98% 0.01 25);
+  --color-base-100: oklch(98.6% 0.003 85);
+  --color-base-200: oklch(96.4% 0.004 85);
+  --color-base-300: oklch(86.5% 0.006 85);
+  --color-base-content: oklch(21% 0.012 55);
+  --color-primary: oklch(21% 0.012 55);
+  --color-primary-content: oklch(98.6% 0.003 85);
+  --color-secondary: oklch(64% 0.19 42);
+  --color-secondary-content: oklch(98.6% 0.003 85);
+  --color-accent: oklch(72% 0.15 62);
+  --color-accent-content: oklch(20% 0.03 62);
+  --color-neutral: oklch(32% 0.012 55);
+  --color-neutral-content: oklch(98.6% 0.003 85);
+  --color-info: oklch(56% 0.13 240);
+  --color-info-content: oklch(98.6% 0.003 240);
+  --color-success: oklch(54% 0.13 152);
+  --color-success-content: oklch(98.6% 0.003 152);
+  --color-warning: oklch(72% 0.15 78);
+  --color-warning-content: oklch(22% 0.04 78);
+  --color-error: oklch(54% 0.2 25);
+  --color-error-content: oklch(98.6% 0.003 25);
 
-  --radius-selector: 0.5rem;
-  --radius-field: 0.75rem;
-  --radius-box: 1.25rem;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
@@ -48,30 +52,30 @@
   prefersdark: false;
   color-scheme: dark;
 
-  --color-base-100: oklch(21% 0.015 265);
-  --color-base-200: oklch(17.5% 0.014 265);
-  --color-base-300: oklch(27% 0.018 265);
-  --color-base-content: oklch(94% 0.008 265);
-  --color-primary: oklch(68% 0.18 277);
-  --color-primary-content: oklch(18% 0.04 277);
-  --color-secondary: oklch(72% 0.11 183);
-  --color-secondary-content: oklch(20% 0.03 183);
-  --color-accent: oklch(80% 0.14 72);
-  --color-accent-content: oklch(22% 0.05 72);
-  --color-neutral: oklch(32% 0.015 265);
-  --color-neutral-content: oklch(95% 0.005 265);
-  --color-info: oklch(70% 0.13 245);
-  --color-info-content: oklch(18% 0.03 245);
-  --color-success: oklch(70% 0.14 155);
-  --color-success-content: oklch(18% 0.03 155);
-  --color-warning: oklch(82% 0.14 85);
-  --color-warning-content: oklch(22% 0.04 85);
-  --color-error: oklch(65% 0.18 25);
-  --color-error-content: oklch(18% 0.03 25);
+  --color-base-100: oklch(16.5% 0.006 60);
+  --color-base-200: oklch(13.5% 0.006 60);
+  --color-base-300: oklch(27% 0.008 60);
+  --color-base-content: oklch(93% 0.006 85);
+  --color-primary: oklch(93% 0.006 85);
+  --color-primary-content: oklch(16% 0.008 60);
+  --color-secondary: oklch(74% 0.16 45);
+  --color-secondary-content: oklch(16% 0.02 45);
+  --color-accent: oklch(82% 0.13 78);
+  --color-accent-content: oklch(18% 0.03 78);
+  --color-neutral: oklch(28% 0.008 60);
+  --color-neutral-content: oklch(93% 0.006 85);
+  --color-info: oklch(68% 0.12 240);
+  --color-info-content: oklch(18% 0.03 240);
+  --color-success: oklch(70% 0.13 152);
+  --color-success-content: oklch(18% 0.03 152);
+  --color-warning: oklch(80% 0.14 80);
+  --color-warning-content: oklch(20% 0.04 80);
+  --color-error: oklch(64% 0.18 22);
+  --color-error-content: oklch(18% 0.03 22);
 
-  --radius-selector: 0.5rem;
-  --radius-field: 0.75rem;
-  --radius-box: 1.25rem;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
@@ -79,23 +83,55 @@
   --noise: 0;
 }
 
+@theme {
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
 @layer base {
   body {
-    @apply bg-base-200 text-base-content antialiased;
+    @apply bg-base-100 text-base-content antialiased;
   }
 
   ::selection {
-    @apply bg-primary/25;
+    @apply bg-base-content/15;
+  }
+
+  /* One focus ring everywhere, in ink, never a coloured glow. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-base-content);
+    outline-offset: 2px;
   }
 }
 
 @layer components {
+  /* A section of the page, separated by a rule rather than framed in a box.
+     Nothing floats on a grey field; everything sits on the page. */
   .surface {
-    @apply rounded-box border border-base-300 bg-base-100;
+    @apply border-t border-base-300;
   }
 
-  .stat-label {
-    @apply text-[11px] font-medium uppercase tracking-wider text-base-content/50;
+  /* The one framed surface: charts need an edge so the grid reads as a group. */
+  .frame {
+    @apply rounded-box border border-base-300/80 bg-base-100;
+  }
+
+  /* Small caps metadata. Mono keeps columns of numbers and labels honest. */
+  .eyebrow {
+    @apply font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-base-content/45;
+  }
+
+  /* Every number in the UI. Tabular, monospaced, tight. */
+  .num {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+
+  /* Headlines carry the page: heavy, tight, no letter-spacing to speak of. */
+  .display {
+    @apply font-semibold tracking-[-0.035em];
   }
 
   /* daisyUI 5 dropped `.form-control`, but every form still uses it. Without a
@@ -109,8 +145,8 @@
 
 /* react-grid-layout theming */
 .react-grid-item.react-grid-placeholder {
-  background: var(--color-primary);
-  opacity: 0.16;
+  background: var(--color-base-content);
+  opacity: 0.08;
   border-radius: var(--radius-box);
   transition-duration: 100ms;
 }
@@ -136,6 +172,11 @@
 
 .widget-drag:active {
   cursor: grabbing;
+}
+
+/* Charts are canvases: strip the paper grain and the empty-state shimmer. */
+.apexcharts-canvas {
+  font-feature-settings: "tnum";
 }
 
 /* Slim scrollbars that match the theme */

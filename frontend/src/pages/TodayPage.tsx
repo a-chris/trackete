@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, Flame, Plus, Target } from 'lucide-react'
+import { Plus, Target } from 'lucide-react'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { Spinner } from '../components/ui/Spinner'
-import { TodayTrackerCard } from '../components/trackers/TodayTrackerCard'
+import { TodayTrackerRow } from '../components/trackers/TodayTrackerRow'
 import { TrackerFormModal } from '../components/trackers/TrackerFormModal'
 import { errorMessage } from '../lib/api'
 import { formatLongDate, todayKey } from '../lib/date'
@@ -25,91 +25,95 @@ export function TodayPage() {
   }).length
   const activeStreaks = items.filter((item) => item.streak > 0).length
   const bestStreak = items.reduce((max, item) => Math.max(max, item.streak), 0)
+  const remaining = items.length - doneToday
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-base-content/50">
-            <CalendarDays className="size-3.5" />
-            {formatLongDate(today)}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Today</h1>
-          <p className="mt-1 text-sm text-base-content/60">
-            Log what happened, keep the streak alive.
-          </p>
+    <div>
+      <header className="border-b border-base-300 pb-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-x-8">
+          <div className="min-w-0">
+            <p className="eyebrow">{formatLongDate(today)}</p>
+            <h1 className="display mt-2 text-[40px] leading-none sm:text-5xl">Today</h1>
+          </div>
+
+          <div className="flex items-end justify-between gap-6 sm:justify-end sm:gap-8">
+            {items.length > 0 && (
+              <div className="flex items-end gap-6 sm:gap-8">
+                <Readout label="logged" value={`${doneToday}/${items.length}`} />
+                <Readout label="streaks" value={String(activeStreaks)} />
+                <Readout label="best" value={`${bestStreak}d`} muted />
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="btn btn-sm btn-primary shrink-0 gap-2"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="size-4" />
+              New tracker
+            </button>
+          </div>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          New tracker
-        </button>
+
+        {items.length > 0 && (
+          <p className="mt-5 text-sm text-base-content/50">
+            {remaining === 0
+              ? 'Everything is logged. That is the whole day closed out.'
+              : `${remaining} still open${remaining === 1 ? '' : 's'} — log it and keep the run going.`}
+          </p>
+        )}
       </header>
 
-      {items.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="surface flex items-center gap-3 p-4">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
-              <Target className="size-4" />
-            </span>
-            <div>
-              <p className="text-lg font-semibold leading-none">
-                {doneToday}
-                <span className="text-base-content/40">/{items.length}</span>
-              </p>
-              <p className="mt-1 text-xs text-base-content/50">logged today</p>
-            </div>
-          </div>
-          <div className="surface flex items-center gap-3 p-4">
-            <span className="grid size-9 place-items-center rounded-xl bg-success/10 text-success">
-              <Flame className="size-4" />
-            </span>
-            <div>
-              <p className="text-lg font-semibold leading-none">{activeStreaks}</p>
-              <p className="mt-1 text-xs text-base-content/50">active streaks</p>
-            </div>
-          </div>
-          <div className="surface col-span-2 flex items-center gap-3 p-4 sm:col-span-1">
-            <span className="grid size-9 place-items-center rounded-xl bg-warning/10 text-warning">
-              <Flame className="size-4" />
-            </span>
-            <div>
-              <p className="text-lg font-semibold leading-none">{bestStreak}</p>
-              <p className="mt-1 text-xs text-base-content/50">best current streak (days)</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {isLoading ? (
-        <Spinner label="Loading your trackers…" />
+        <div className="pt-16">
+          <Spinner label="Loading your trackers…" />
+        </div>
       ) : isError ? (
-        <ErrorState
-          title="Couldn't load your day"
-          description={errorMessage(error)}
-          onRetry={() => void refetch()}
-          retrying={isFetching}
-        />
+        <div className="pt-8">
+          <ErrorState
+            title="Couldn't load your day"
+            description={errorMessage(error)}
+            onRetry={() => void refetch()}
+            retrying={isFetching}
+          />
+        </div>
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={Target}
-          title="Nothing tracked yet"
-          description="Start with one thing you want to keep an eye on — a habit, a number, or anything else. You can build a dashboard around it later."
-          action={
-            <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-              <Plus className="size-4" />
-              Create your first tracker
-            </button>
-          }
-        />
+        <div className="pt-4">
+          <EmptyState
+            icon={Target}
+            title="Nothing tracked yet"
+            description="Start with one thing you want to keep an eye on — a habit, a number, or anything else. You can build a dashboard around it later."
+            action={
+              <button type="button" className="btn btn-primary gap-2" onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4" />
+                Create your first tracker
+              </button>
+            }
+          />
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="divide-y divide-base-300">
           {items.map((item) => (
-            <TodayTrackerCard key={item.tracker.id} item={item} />
+            <TodayTrackerRow key={item.tracker.id} item={item} />
           ))}
         </div>
       )}
 
       {createOpen && <TrackerFormModal onClose={() => setCreateOpen(false)} />}
+    </div>
+  )
+}
+
+function Readout({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div>
+      <p className="eyebrow">{label}</p>
+      <p
+        className={`num mt-1.5 text-2xl leading-none ${muted ? 'text-base-content/45' : 'text-base-content'}`}
+      >
+        {value}
+      </p>
     </div>
   )
 }

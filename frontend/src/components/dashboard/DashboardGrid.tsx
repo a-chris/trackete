@@ -17,7 +17,7 @@ interface DashboardGridProps {
   onDeleteWidget: (widget: Widget) => void
 }
 
-const GRID_MARGIN: [number, number] = [16, 16]
+const GRID_MARGIN: [number, number] = [12, 12]
 
 function toLayout(widgets: Widget[]): Layout {
   return widgets.map((widget) => ({
@@ -97,7 +97,7 @@ export function DashboardGrid({
 
   if (mobile) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {[...dashboard.widgets]
           .sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x)
           .map((widget) => (
@@ -112,9 +112,9 @@ export function DashboardGrid({
   return (
     <div ref={containerRef} className="w-full">
       {!mounted ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {dashboard.widgets.map((widget) => (
-            <div key={widget.id} className="surface h-72 animate-pulse opacity-60" />
+            <div key={widget.id} className="frame h-72 animate-pulse opacity-40" />
           ))}
         </div>
       ) : (

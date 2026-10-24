@@ -51,91 +51,104 @@ export function TrackersPage() {
     })
   }
 
-  const renderCard = (tracker: Tracker) => (
-    <div key={tracker.id} className="surface flex flex-col gap-3 p-4">
-      <div className="flex items-start gap-3">
-        <div
-          className="grid size-10 shrink-0 place-items-center rounded-xl text-lg"
-          style={{ backgroundColor: `${tracker.color}22` }}
-        >
-          {tracker.icon}
-        </div>
-        <div className="min-w-0 flex-1">
+  const renderRow = (tracker: Tracker) => (
+    <div
+      key={tracker.id}
+      className={`group flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
+        tracker.archived ? 'opacity-55' : ''
+      }`}
+    >
+      <span
+        className="grid size-8 shrink-0 place-items-center rounded-[3px] text-[15px] leading-none"
+        style={{ backgroundColor: `${tracker.color}1f` }}
+        aria-hidden="true"
+      >
+        {tracker.icon}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
           <Link
             to={`/trackers/${tracker.id}`}
-            className="block truncate font-medium hover:underline"
+            className="truncate text-[15px] font-medium leading-tight hover:underline hover:decoration-base-content/30 hover:underline-offset-4"
             title={tracker.name}
           >
             {tracker.name}
           </Link>
-          <p className="truncate text-xs text-base-content/50">
-            {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
-              (tracker.kind === 'boolean' ? 'Yes / No' : tracker.unit || 'Number')}
-          </p>
+          <span className="eyebrow shrink-0 text-base-content/35">
+            {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
+          </span>
         </div>
-        <span className={`badge badge-sm ${tracker.kind === 'boolean' ? 'badge-primary' : 'badge-secondary'}`}>
-          {tracker.kind === 'boolean' ? 'Yes/No' : 'Number'}
-        </span>
+        <p className="eyebrow mt-1 truncate text-[10px] text-base-content/35">
+          {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
+            (tracker.kind === 'boolean' ? 'no goal set' : tracker.unit || 'unitless')}
+          <span className="mx-1.5 text-base-content/20">/</span>
+          since {formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
+        </p>
+        {tracker.description && (
+          <p className="mt-1 line-clamp-1 text-xs text-base-content/45">{tracker.description}</p>
+        )}
       </div>
 
-      {tracker.description && (
-        <p className="line-clamp-2 text-sm text-base-content/60">{tracker.description}</p>
-      )}
-
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-base-300 pt-3">
-        <span className="text-[11px] text-base-content/40">
-          created {formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs"
-            onClick={() => {
-              setEditing(tracker)
-              setModalOpen(true)
-            }}
-            title="Edit tracker"
-          >
-            <Pencil className="size-3.5" />
-            <span className="hidden sm:inline">Edit</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs"
-            onClick={() => toggleArchive(tracker)}
-            title={tracker.archived ? 'Restore tracker' : 'Archive tracker'}
-          >
-            {tracker.archived ? (
-              <ArchiveRestore className="size-3.5" />
-            ) : (
-              <Archive className="size-3.5" />
-            )}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs text-error"
-            onClick={() => setDeleting(tracker)}
-            title="Delete tracker"
-          >
-            <Trash className="size-3.5" />
-          </button>
-        </div>
+      <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+        <button
+          type="button"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-base-content/5 hover:text-base-content"
+          onClick={() => {
+            setEditing(tracker)
+            setModalOpen(true)
+          }}
+          title="Edit tracker"
+          aria-label={`Edit ${tracker.name}`}
+        >
+          <Pencil className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-base-content/5 hover:text-base-content"
+          onClick={() => toggleArchive(tracker)}
+          title={tracker.archived ? 'Restore tracker' : 'Archive tracker'}
+          aria-label={tracker.archived ? `Restore ${tracker.name}` : `Archive ${tracker.name}`}
+        >
+          {tracker.archived ? (
+            <ArchiveRestore className="size-3.5" />
+          ) : (
+            <Archive className="size-3.5" />
+          )}
+        </button>
+        <button
+          type="button"
+          className="grid size-8 place-items-center rounded-[3px] text-base-content/45 transition-colors hover:bg-error/10 hover:text-error"
+          onClick={() => setDeleting(tracker)}
+          title="Delete tracker"
+          aria-label={`Delete ${tracker.name}`}
+        >
+          <Trash className="size-3.5" />
+        </button>
       </div>
     </div>
   )
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5 border-b border-base-300 pb-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Trackers</h1>
-          <p className="mt-1 text-sm text-base-content/60">
-            Everything you track. Each tracker feeds the charts on your dashboards.
-          </p>
+          <p className="eyebrow">Everything you log</p>
+          <h1 className="display mt-2 text-[40px] leading-none sm:text-5xl">Trackers</h1>
+        </div>
+        <div className="flex items-end gap-6 sm:gap-8">
+          <div>
+            <p className="eyebrow">active</p>
+            <p className="num mt-1.5 text-2xl leading-none">{active.length}</p>
+          </div>
+          <div>
+            <p className="eyebrow">archived</p>
+            <p className="num mt-1.5 text-2xl leading-none text-base-content/45">{archived.length}</p>
+          </div>
         </div>
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn btn-sm btn-primary gap-2"
           onClick={() => {
             setEditing(null)
             setModalOpen(true)
@@ -163,7 +176,7 @@ export function TrackersPage() {
           action={
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-primary gap-2"
               onClick={() => {
                 setEditing(null)
                 setModalOpen(true)
@@ -175,20 +188,18 @@ export function TrackersPage() {
           }
         />
       ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{active.map(renderCard)}</div>
+        <div className="space-y-10">
+          <div className="divide-y divide-base-300">
+            {active.map(renderRow)}
+          </div>
 
           {archived.length > 0 && (
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-base-content/50">
-                Archived
-              </h2>
-              <div className="grid gap-4 opacity-70 sm:grid-cols-2 xl:grid-cols-3">
-                {archived.map(renderCard)}
-              </div>
+            <section>
+              <h2 className="eyebrow border-b border-base-300 pb-2">Archived</h2>
+              <div className="divide-y divide-base-300">{archived.map(renderRow)}</div>
             </section>
           )}
-        </>
+        </div>
       )}
 
       {modalOpen && (

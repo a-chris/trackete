@@ -1,11 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CircleUserRound, ExternalLink, LockKeyhole, LogOut, Palette } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useToast } from '../components/ui/Toast'
 import { api, errorMessage } from '../lib/api'
 import { useMe, useMeta } from '../lib/queries'
+
+const fieldLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/70'
+const field = 'input h-10 w-full rounded-[3px] border-base-300'
 
 export function SettingsPage() {
   const toast = useToast()
@@ -77,66 +80,60 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Settings</h1>
-        <p className="mt-1 text-sm text-base-content/60">Your account, appearance and instance details.</p>
+    <div className="space-y-10">
+      <header className="border-b border-base-300 pb-6">
+        <p className="eyebrow">Account</p>
+        <h1 className="display mt-2 text-[40px] leading-none sm:text-5xl">Settings</h1>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="surface p-5">
-          <div className="flex items-center gap-2">
-            <CircleUserRound className="size-4 text-primary" />
-            <h2 className="font-semibold">Profile</h2>
-          </div>
-          <p className="mt-1 text-sm text-base-content/55">How you show up inside Trackete.</p>
+      <div className="grid gap-x-14 gap-y-10 lg:grid-cols-2">
+        <section>
+          <h2 className="eyebrow border-b border-base-300 pb-2">Profile</h2>
+          <p className="mt-3 text-sm text-base-content/45">How you show up inside Trackete.</p>
 
-          <form className="mt-4 space-y-3" onSubmit={onProfileSubmit}>
-            <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">Name</span>
+          <form className="mt-5 space-y-4" onSubmit={onProfileSubmit}>
+            <label className="block">
+              <span className={fieldLabel}>Name</span>
               <input
-                className="input w-full"
+                className={field}
                 value={name}
                 onChange={(event) => setNameDraft(event.target.value)}
                 maxLength={80}
               />
             </label>
-            <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">Email</span>
-              <input className="input w-full" value={user?.email ?? ''} disabled />
+            <label className="block">
+              <span className={fieldLabel}>Email</span>
+              <input className={`${field} num text-[13px]`} value={user?.email ?? ''} disabled />
             </label>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={updateName.isPending}>
+            <button type="submit" className="btn btn-sm btn-primary" disabled={updateName.isPending}>
               {updateName.isPending && <span className="loading loading-spinner loading-xs" />}
               Save profile
             </button>
           </form>
         </section>
 
-        <section className="surface p-5">
-          <div className="flex items-center gap-2">
-            <LockKeyhole className="size-4 text-primary" />
-            <h2 className="font-semibold">Password</h2>
-          </div>
-          <p className="mt-1 text-sm text-base-content/55">Changing it signs out other browsers.</p>
+        <section>
+          <h2 className="eyebrow border-b border-base-300 pb-2">Password</h2>
+          <p className="mt-3 text-sm text-base-content/45">Changing it signs out other browsers.</p>
 
-          <form className="mt-4 space-y-3" onSubmit={onPasswordSubmit}>
-            <label className="form-control">
-              <span className="mb-1.5 block text-sm font-medium">Current password</span>
+          <form className="mt-5 space-y-4" onSubmit={onPasswordSubmit}>
+            <label className="block">
+              <span className={fieldLabel}>Current password</span>
               <input
                 type="password"
-                className="input w-full"
+                className={field}
                 value={currentPassword}
                 onChange={(event) => setCurrentPassword(event.target.value)}
                 autoComplete="current-password"
                 required
               />
             </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="form-control">
-                <span className="mb-1.5 block text-sm font-medium">New password</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className={fieldLabel}>New password</span>
                 <input
                   type="password"
-                  className="input w-full"
+                  className={field}
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   autoComplete="new-password"
@@ -144,11 +141,11 @@ export function SettingsPage() {
                   required
                 />
               </label>
-              <label className="form-control">
-                <span className="mb-1.5 block text-sm font-medium">Confirm</span>
+              <label className="block">
+                <span className={fieldLabel}>Confirm</span>
                 <input
                   type="password"
-                  className="input w-full"
+                  className={field}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   autoComplete="new-password"
@@ -157,41 +154,42 @@ export function SettingsPage() {
                 />
               </label>
             </div>
-            <button type="submit" className="btn btn-sm" disabled={changePassword.isPending}>
+            <button type="submit" className="btn btn-sm border-base-300" disabled={changePassword.isPending}>
               {changePassword.isPending && <span className="loading loading-spinner loading-xs" />}
               Change password
             </button>
           </form>
         </section>
 
-        <section className="surface p-5">
-          <div className="flex items-center gap-2">
-            <Palette className="size-4 text-primary" />
-            <h2 className="font-semibold">Appearance</h2>
-          </div>
-          <p className="mt-1 text-sm text-base-content/55">Follow your system, or pick a side.</p>
-          <div className="mt-4">
+        <section>
+          <h2 className="eyebrow border-b border-base-300 pb-2">Appearance</h2>
+          <p className="mt-3 text-sm text-base-content/45">Follow your system, or pick a side.</p>
+          <div className="mt-5">
             <ThemeToggle />
           </div>
         </section>
 
-        <section className="surface p-5">
-          <h2 className="font-semibold">About</h2>
-          <p className="mt-1 text-sm text-base-content/55">
+        <section>
+          <h2 className="eyebrow border-b border-base-300 pb-2">About</h2>
+          <p className="mt-3 text-sm text-base-content/45">
             Trackete is open source. Track anything, then build your own dashboards.
           </p>
-          <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            <dt className="text-base-content/50">Version</dt>
-            <dd className="text-right font-medium">{meta?.version ?? '—'}</dd>
-            <dt className="text-base-content/50">Registration</dt>
-            <dd className="text-right font-medium">
-              {meta?.allowRegistration === false ? 'Closed' : 'Open'}
-            </dd>
-            <dt className="text-base-content/50">Storage</dt>
-            <dd className="text-right font-medium">SQLite</dd>
+          <dl className="num mt-5 space-y-2 text-[13px]">
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-base-content/40">Version</dt>
+              <dd>{meta?.version ?? '—'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-base-content/40">Registration</dt>
+              <dd>{meta?.allowRegistration === false ? 'closed' : 'open'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-base-content/40">Storage</dt>
+              <dd>sqlite</dd>
+            </div>
           </dl>
           <a
-            className="btn btn-outline btn-sm mt-4"
+            className="btn btn-sm btn-ghost mt-5 gap-2 border-base-300"
             href="https://github.com/a-chris/trackete"
             target="_blank"
             rel="noreferrer noopener"
@@ -202,13 +200,16 @@ export function SettingsPage() {
         </section>
       </div>
 
-      <section className="surface flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <section className="flex flex-col gap-4 border-t border-base-300 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-semibold">Sign out</h2>
-          <p className="text-sm text-base-content/55">Ends this session on this device.</p>
+          <h2 className="text-sm font-medium">Sign out</h2>
+          <p className="mt-0.5 text-sm text-base-content/45">Ends this session on this device.</p>
         </div>
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => logout.mutate()}>
-          <LogOut className="size-3.5" />
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost gap-2 border-base-300"
+          onClick={() => logout.mutate()}
+        >
           Sign out
         </button>
       </section>

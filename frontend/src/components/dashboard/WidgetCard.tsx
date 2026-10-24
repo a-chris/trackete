@@ -25,27 +25,32 @@ export function WidgetCard({
   const title = widget.title || tracker?.name || 'Chart'
 
   return (
-    <div className="surface flex h-full flex-col overflow-hidden">
+    <div
+      className={`frame flex h-full flex-col overflow-hidden transition-colors ${
+        editing ? 'border-base-content/30 outline-1 -outline-offset-1 outline-dashed outline-base-content/25' : ''
+      }`}
+    >
       <div
         className={`flex items-start justify-between gap-2 px-4 pb-1 pt-3 ${
           editing ? 'widget-drag' : ''
         }`}
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold" title={title}>
-            {title}
-          </p>
-          <p className="truncate text-[11px] text-base-content/45">
-            {tracker ? `${tracker.icon} ${tracker.name}` : 'Tracker missing'} ·{' '}
+          <p className="eyebrow truncate">
+            {tracker ? tracker.name : 'Tracker missing'}
+            <span className="mx-1.5 text-base-content/25">/</span>
             {rangeDays(widget.config.range)}
+          </p>
+          <p className="mt-1 truncate text-[15px] font-medium tracking-tight" title={title}>
+            {title}
           </p>
         </div>
         {editing && (
           <div className="flex shrink-0 items-center gap-0.5">
-            <GripVertical className="size-4 opacity-30" aria-hidden="true" />
+            <GripVertical className="size-4 opacity-25" aria-hidden="true" />
             <button
               type="button"
-              className="btn btn-ghost btn-xs btn-square"
+              className="grid size-7 place-items-center rounded-[3px] text-base-content/50 transition-colors hover:bg-base-content/5 hover:text-base-content"
               onClick={onEdit}
               aria-label="Edit chart"
               title="Edit chart"
@@ -54,7 +59,7 @@ export function WidgetCard({
             </button>
             <button
               type="button"
-              className="btn btn-ghost btn-xs btn-square text-error"
+              className="grid size-7 place-items-center rounded-[3px] text-base-content/50 transition-colors hover:bg-error/10 hover:text-error"
               onClick={onDelete}
               aria-label="Delete chart"
               title="Delete chart"
@@ -68,10 +73,16 @@ export function WidgetCard({
       <div className="min-h-0 flex-1 px-2 pb-2 pt-1">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="loading loading-spinner loading-sm text-base-content/30" />
+            <span className="loading loading-spinner loading-sm text-base-content/25" />
           </div>
         ) : tracker ? (
-          <ChartRenderer data={data} kind={tracker.kind} unit={tracker.unit} color={tracker.color} />
+          <ChartRenderer
+            data={data}
+            kind={tracker.kind}
+            unit={tracker.unit}
+            color={tracker.color}
+            compact={widget.layout.w <= 5}
+          />
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-xs text-base-content/50">
             This chart points at a tracker that no longer exists.

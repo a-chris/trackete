@@ -8,6 +8,8 @@ import { formatValue } from '../../lib/format'
 import { useEntryMutations } from '../../lib/queries'
 import type { Entry, Tracker } from '../../lib/types'
 
+const entryLabel = 'mb-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-base-content/40'
+
 interface EntryEditorProps {
   tracker: Tracker
   entries: Entry[]
@@ -57,19 +59,19 @@ export function EntryEditor({
 
   return (
     <section className="surface overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-base-300 p-4 sm:p-5">
+      <div className="flex flex-col gap-3 border-b border-base-300 px-0 py-4 sm:py-5">
         <div>
-          <h2 className="font-semibold">Add or update a day</h2>
-          <p className="text-xs text-base-content/50">
+          <h2 className="eyebrow">Add or update a day</h2>
+          <p className="mt-1 text-xs text-base-content/40">
             One value per day — saving the same date replaces the previous value.
           </p>
         </div>
         <form className="flex flex-wrap items-end gap-2" onSubmit={upsert}>
           <label className="form-control">
-            <span className="mb-1 block text-[11px] font-medium text-base-content/50">Day</span>
+            <span className={entryLabel}>Day</span>
             <input
               type="date"
-              className="input input-sm"
+              className="input input-sm num rounded-[3px] border-base-300"
               value={day}
               max={today}
               onChange={(event) => setDay(event.target.value)}
@@ -77,12 +79,12 @@ export function EntryEditor({
             />
           </label>
           <label className="form-control">
-            <span className="mb-1 block text-[11px] font-medium text-base-content/50">
+            <span className={entryLabel}>
               {tracker.kind === 'boolean' ? 'Done?' : 'Value'}
             </span>
             {tracker.kind === 'boolean' ? (
               <select
-                className="select select-sm"
+                className="select select-sm rounded-[3px] border-base-300"
                 value={value || '1'}
                 onChange={(event) => setValue(event.target.value)}
               >
@@ -92,7 +94,7 @@ export function EntryEditor({
             ) : (
               <input
                 type="number"
-                className="input input-sm w-28"
+                className="input input-sm num w-28 rounded-[3px] border-base-300"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
                 placeholder="0"
@@ -103,17 +105,17 @@ export function EntryEditor({
             )}
           </label>
           <label className="form-control min-w-40 flex-1">
-            <span className="mb-1 block text-[11px] font-medium text-base-content/50">Note</span>
+            <span className={entryLabel}>Note</span>
             <input
               type="text"
-              className="input input-sm w-full"
+              className="input input-sm w-full rounded-[3px] border-base-300"
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Optional"
               maxLength={500}
             />
           </label>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={save.isPending}>
+          <button type="submit" className="btn btn-primary btn-sm gap-2" disabled={save.isPending}>
             {save.isPending ? (
               <span className="loading loading-spinner loading-xs" />
             ) : (
@@ -145,28 +147,28 @@ export function EntryEditor({
         <div className="max-h-96 overflow-auto">
           <table className="table table-sm">
             <thead className="sticky top-0 z-10 bg-base-100">
-              <tr>
-                <th>Day</th>
-                <th className="text-right">Value</th>
-                <th>Note</th>
+              <tr className="border-base-300">
+                <th className="eyebrow font-normal">Day</th>
+                <th className="eyebrow text-right font-normal">Value</th>
+                <th className="eyebrow font-normal">Note</th>
                 <th className="w-12" />
               </tr>
             </thead>
             <tbody>
               {[...entries].reverse().map((entry) => (
-                <tr key={entry.day}>
-                  <td className="whitespace-nowrap">
+                <tr key={entry.day} className="border-base-300">
+                  <td className="num whitespace-nowrap text-[12px] text-base-content/70">
                     {formatDate(entry.day, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </td>
-                  <td className="text-right font-medium tabular-nums">
+                  <td className="num text-right text-[12px]">
                     {formatValue(entry.value, tracker.unit, tracker.kind)}
                   </td>
-                  <td className="max-w-72 truncate text-base-content/60">{entry.note || '—'}</td>
+                  <td className="max-w-72 truncate text-xs text-base-content/50">{entry.note || '—'}</td>
                   <td>
                     <div className="flex justify-end gap-0.5">
                       <button
                         type="button"
-                        className="btn btn-ghost btn-xs"
+                        className="grid size-7 place-items-center rounded-[3px] text-base-content/40 transition-colors hover:bg-base-content/5 hover:text-base-content"
                         onClick={() => {
                           setDay(entry.day)
                           setValue(String(entry.value))
@@ -178,7 +180,7 @@ export function EntryEditor({
                       </button>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-xs text-error"
+                        className="grid size-7 place-items-center rounded-[3px] text-base-content/40 transition-colors hover:bg-error/10 hover:text-error"
                         onClick={() =>
                           remove.mutate(
                             { trackerId: tracker.id, day: entry.day },

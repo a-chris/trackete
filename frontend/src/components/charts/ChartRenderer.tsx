@@ -18,15 +18,18 @@ interface ChartRendererProps {
   /** Rendered as a Retry button when the chart data could not be loaded. */
   onRetry?: () => void
   retrying?: boolean
+  /** Narrow cards get fewer axis ticks so labels never truncate. */
+  compact?: boolean
 }
 
 export function ChartRenderer({
   data,
   kind,
   unit = '',
-  color = '#6366f1',
+  color = '#d9532b',
   onRetry,
   retrying = false,
+  compact = false,
 }: ChartRendererProps) {
   const theme = useChartTheme()
 
@@ -88,7 +91,7 @@ export function ChartRenderer({
   }
 
   const chartType = data.chartType === 'bar' || data.chartType === 'area' ? data.chartType : 'line'
-  const options = buildSeriesOptions(data, kind, unit, color, chartType, data.granularity, theme)
+  const options = buildSeriesOptions(data, kind, unit, color, chartType, data.granularity, theme, compact)
 
   return (
     <div className="h-full w-full">
@@ -117,13 +120,13 @@ function StatCard({
       : formatValue(stat.value, unit, kind === 'boolean' && stat.label.includes('streak') ? 'numeric' : kind)
 
   return (
-    <div className="flex h-full min-h-32 flex-col justify-between gap-2 pb-2 pr-1">
+    <div className="flex h-full min-h-32 flex-col gap-3 pb-2 pr-1">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-base-content/50">{stat.label}</p>
-        <p className="mt-1 text-3xl font-semibold tabular-nums">{display}</p>
+        <p className="eyebrow">{stat.label}</p>
+        <p className="num mt-2 text-4xl leading-none">{display}</p>
       </div>
       {stat.spark.length > 1 && (
-        <div className="h-14 w-full pb-1">
+        <div className="min-h-14 flex-1">
           <ReactApexChart
             type="area"
             height="100%"

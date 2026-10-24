@@ -152,26 +152,30 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <header className="flex flex-col gap-5 border-b border-base-300 pb-6 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-base-content/50">Dashboard</p>
-          <div className="mt-1 flex items-center gap-2">
-            <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{active.name}</h1>
-            {active.isDefault && <span className="badge badge-ghost badge-sm">default</span>}
+          <p className="eyebrow">Dashboard</p>
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="display truncate text-[34px] leading-none sm:text-4xl">{active.name}</h1>
+            {active.isDefault && (
+              <span className="eyebrow shrink-0 border border-base-300 px-1.5 py-0.5 text-base-content/50">
+                default
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-sm text-base-content/60">
+          <p className="num mt-3 text-[11px] uppercase tracking-[0.1em] text-base-content/40">
             {widgets.length === 0
-              ? 'Add charts to turn your logs into a story.'
-              : editing
-                ? 'Drag cards by their header, resize from the bottom-right corner.'
-                : `${widgets.length} chart${widgets.length === 1 ? '' : 's'} · switch on edit mode to rearrange.`}
+              ? 'no charts yet'
+              : `${widgets.length} chart${widgets.length === 1 ? '' : 's'}${
+                  editing ? ' · drag headers, resize from the corner' : ' · switch on edit to rearrange'
+                }`}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {dashboards.length > 1 && (
             <select
-              className="select select-sm"
+              className="select select-sm w-auto max-w-28 rounded-[3px] border-base-300 font-mono text-[11px] uppercase tracking-[0.08em] sm:max-w-none"
               value={active.id}
               onChange={(event) => navigate(`/dashboard/${event.target.value}`)}
               aria-label="Switch dashboard"
@@ -186,16 +190,18 @@ export function DashboardPage() {
 
           <button
             type="button"
-            className={`btn btn-sm ${editing ? 'btn-primary' : 'btn-outline'}`}
+            className={`btn btn-sm gap-2 ${editing ? 'btn-primary' : 'btn-ghost border-base-300'}`}
             onClick={() => setEditing((value) => !value)}
+            aria-label={editing ? 'Done editing layout' : 'Edit layout'}
+            title={editing ? 'Done editing layout' : 'Edit layout'}
           >
             {editing ? <Check className="size-4" /> : <Pencil className="size-3.5" />}
-            {editing ? 'Done editing' : 'Edit layout'}
+            <span className="hidden sm:inline">{editing ? 'Done' : 'Edit layout'}</span>
           </button>
 
           <button
             type="button"
-            className="btn btn-sm btn-primary"
+            className="btn btn-sm btn-primary gap-2"
             onClick={() => setWidgetModal({ open: true, widget: null })}
             disabled={trackers.length === 0}
             title={trackers.length === 0 ? 'Create a tracker first' : 'Add a chart'}
@@ -208,14 +214,14 @@ export function DashboardPage() {
             <button
               type="button"
               tabIndex={0}
-              className="btn btn-sm btn-ghost btn-square"
+              className="grid size-8 place-items-center rounded-[3px] border border-base-300 text-base-content/60 transition-colors hover:border-base-content/40 hover:text-base-content"
               aria-label="Dashboard actions"
             >
               <EllipsisVertical className="size-4" />
             </button>
             <ul
               tabIndex={0}
-              className="menu dropdown-content z-40 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
+              className="menu dropdown-content frame z-40 mt-2 w-52 p-1.5 shadow-sm"
             >
               <li>
                 <button

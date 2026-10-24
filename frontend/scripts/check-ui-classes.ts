@@ -24,10 +24,8 @@ const REQUIRED_CLASSES = [
   'input',
   'select',
   'toggle',
-  // buttons and button groups
+  // buttons
   'btn',
-  'join',
-  'join-item',
   // overlays
   'modal',
   'modal-box',

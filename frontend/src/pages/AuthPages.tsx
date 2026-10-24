@@ -18,27 +18,52 @@ function AuthFrame({
   footer: ReactNode
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-base-200 px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center gap-2 text-center">
+    <div className="grid min-h-screen bg-base-100 lg:grid-cols-[1.05fr_1fr]">
+      {/* The pitch, not a card: a page you land on rather than a form on a field. */}
+      <div className="hidden flex-col justify-between border-r border-base-300 px-12 py-10 lg:flex">
+        <Link to="/" aria-label="Trackete home">
           <Logo />
-          <p className="max-w-xs text-sm text-base-content/50">
-            Track anything, then build the dashboard you actually want.
+        </Link>
+
+        <div className="max-w-md">
+          <p className="eyebrow">One entry at a time</p>
+          <p className="display mt-5 text-[44px] leading-[0.95] xl:text-5xl">
+            Small numbers,
+            <br />
+            kept honestly,
+            <br />
+            become a life.
+          </p>
+          <div className="mt-10 h-px w-14 bg-base-content/20" />
+          <p className="mt-6 max-w-sm text-sm leading-relaxed text-base-content/45">
+            Log a habit or a number in seconds. Trackete turns the entries into the charts you
+            actually want to look at.
           </p>
         </div>
-        <div className="surface p-6 shadow-sm sm:p-8">
-          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-          <p className="mt-1 text-sm text-base-content/60">{subtitle}</p>
-          <div className="mt-6">{children}</div>
-        </div>
-        <div className="mt-5 text-center text-sm text-base-content/60">{footer}</div>
-        <div className="mt-8 flex justify-center">
-          <ThemeToggle compact />
+
+        <p className="eyebrow">Self-hosted · SQLite · Open source</p>
+      </div>
+
+      <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-10 lg:hidden">
+            <Logo />
+          </div>
+          <h1 className="display text-2xl">{title}</h1>
+          <p className="mt-2 text-sm text-base-content/45">{subtitle}</p>
+          <div className="mt-8">{children}</div>
+          <div className="mt-6 text-sm text-base-content/50">{footer}</div>
+          <div className="mt-10 border-t border-base-300 pt-4">
+            <ThemeToggle compact />
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
+const authField = 'input h-10 w-full rounded-[3px] border-base-300'
+const authLabel = 'mb-1.5 block text-[13px] font-medium text-base-content/70'
 
 function useRedirectTarget(): string {
   const location = useLocation()
@@ -89,12 +114,12 @@ export function LoginPage() {
       }
     >
       <form className="space-y-4" onSubmit={onSubmit}>
-        {login.isError && <div className="alert alert-error text-sm">{errorMessage(login.error)}</div>}
-        <label className="form-control w-full">
-          <span className="mb-1.5 block text-sm font-medium">Email</span>
+        {login.isError && <div className="alert alert-error rounded-[3px] text-sm">{errorMessage(login.error)}</div>}
+        <label className="block">
+          <span className={authLabel}>Email</span>
           <input
             type="email"
-            className="input w-full"
+            className={authField}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -102,18 +127,18 @@ export function LoginPage() {
             autoFocus
           />
         </label>
-        <label className="form-control w-full">
-          <span className="mb-1.5 block text-sm font-medium">Password</span>
+        <label className="block">
+          <span className={authLabel}>Password</span>
           <input
             type="password"
-            className="input w-full"
+            className={authField}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
             required
           />
         </label>
-        <button type="submit" className="btn btn-primary w-full" disabled={login.isPending}>
+        <button type="submit" className="btn btn-primary h-10 w-full" disabled={login.isPending}>
           {login.isPending && <span className="loading loading-spinner loading-sm" />}
           Sign in
         </button>
@@ -181,13 +206,13 @@ export function RegisterPage() {
     >
       <form className="space-y-4" onSubmit={onSubmit}>
         {register.isError && (
-          <div className="alert alert-error text-sm">{errorMessage(register.error)}</div>
+          <div className="alert alert-error rounded-[3px] text-sm">{errorMessage(register.error)}</div>
         )}
-        <label className="form-control w-full">
-          <span className="mb-1.5 block text-sm font-medium">Name</span>
+        <label className="block">
+          <span className={authLabel}>Name</span>
           <input
             type="text"
-            className="input w-full"
+            className={authField}
             value={name}
             onChange={(event) => setName(event.target.value)}
             autoComplete="name"
@@ -195,11 +220,11 @@ export function RegisterPage() {
             maxLength={80}
           />
         </label>
-        <label className="form-control w-full">
-          <span className="mb-1.5 block text-sm font-medium">Email</span>
+        <label className="block">
+          <span className={authLabel}>Email</span>
           <input
             type="email"
-            className="input w-full"
+            className={authField}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -207,20 +232,20 @@ export function RegisterPage() {
             autoFocus
           />
         </label>
-        <label className="form-control w-full">
-          <span className="mb-1.5 block text-sm font-medium">Password</span>
+        <label className="block">
+          <span className={authLabel}>Password</span>
           <input
             type="password"
-            className="input w-full"
+            className={authField}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
             minLength={8}
             required
           />
-          <span className="mt-1.5 block text-xs text-base-content/50">At least 8 characters.</span>
+          <span className="mt-1.5 block text-xs text-base-content/40">At least 8 characters.</span>
         </label>
-        <button type="submit" className="btn btn-primary w-full" disabled={register.isPending}>
+        <button type="submit" className="btn btn-primary h-10 w-full" disabled={register.isPending}>
           {register.isPending && <span className="loading loading-spinner loading-sm" />}
           Create account
         </button>

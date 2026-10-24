@@ -113,38 +113,49 @@ export function TrackerDetailPage() {
   const showAverageNote = tracker.kind === 'numeric' && summary && summary.loggedDays > 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-base-content/50">
-        <Link to="/trackers" className="inline-flex items-center gap-1 hover:text-base-content">
-          <ArrowLeft className="size-3.5" />
+    <div className="space-y-8">
+      <div className="eyebrow flex items-center gap-2 text-base-content/40">
+        <Link to="/trackers" className="inline-flex items-center gap-1.5 hover:text-base-content">
+          <ArrowLeft className="size-3" />
           Trackers
         </Link>
-        <span>/</span>
-        <span className="truncate">{tracker.name}</span>
+        <span className="text-base-content/20">/</span>
+        <span className="truncate text-base-content/60">{tracker.name}</span>
       </div>
 
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div
-            className="grid size-12 shrink-0 place-items-center rounded-2xl text-2xl"
-            style={{ backgroundColor: `${tracker.color}22` }}
+      <header className="flex flex-col gap-5 border-b border-base-300 pb-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
+          <span
+            className="grid size-11 shrink-0 place-items-center rounded-[3px] text-2xl leading-none"
+            style={{ backgroundColor: `${tracker.color}1f` }}
+            aria-hidden="true"
           >
             {tracker.icon}
-          </div>
+          </span>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{tracker.name}</h1>
-            <p className="mt-0.5 text-sm text-base-content/60">
+            <h1 className="display text-[34px] leading-none sm:text-4xl">{tracker.name}</h1>
+            <p className="eyebrow mt-3">
               {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
-                (tracker.kind === 'boolean' ? 'Yes / No habit' : `Number${tracker.unit ? ` in ${tracker.unit}` : ''}`)}
+                (tracker.kind === 'boolean'
+                  ? 'Yes / No habit'
+                  : `Number${tracker.unit ? ` in ${tracker.unit}` : ''}`)}
             </p>
             {tracker.description && (
-              <p className="mt-2 max-w-2xl text-sm text-base-content/60">{tracker.description}</p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-base-content/50">
+                {tracker.description}
+              </p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {tracker.archived && <span className="badge badge-ghost">Archived</span>}
-          <button type="button" className="btn btn-sm btn-outline" onClick={() => setEditOpen(true)}>
+          {tracker.archived && (
+            <span className="eyebrow border border-base-300 px-1.5 py-0.5">Archived</span>
+          )}
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost gap-2 border-base-300"
+            onClick={() => setEditOpen(true)}
+          >
             <Pencil className="size-3.5" />
             Edit
           </button>
@@ -152,7 +163,7 @@ export function TrackerDetailPage() {
       </header>
 
       {summary && summary.days > 0 && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <dl className="flex flex-col divide-y divide-base-300 border-b border-base-300 sm:flex-row sm:divide-x sm:divide-y-0">
           <StatBox
             label={tracker.kind === 'boolean' ? 'Days done' : 'Total'}
             value={formatValue(summary.total, tracker.unit, tracker.kind)}
@@ -175,8 +186,8 @@ export function TrackerDetailPage() {
           />
           <StatBox
             label="Current streak"
-            value={`${summary.currentStreak} d`}
-            hint={`best ${summary.bestStreak} d`}
+            value={`${summary.currentStreak}d`}
+            hint={`best ${summary.bestStreak}d`}
           />
           <StatBox
             label="Strongest day"
@@ -187,28 +198,32 @@ export function TrackerDetailPage() {
                 : undefined
             }
           />
-        </div>
+        </dl>
       )}
 
-      <section className="surface p-4 sm:p-5">
+      <section>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-1">
             {chartOptions.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
                 type="button"
-                className={`btn btn-sm ${chart === value ? 'btn-primary' : 'btn-ghost'}`}
+                className={`flex h-8 items-center gap-1.5 rounded-[3px] px-2.5 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${
+                  chart === value
+                    ? 'bg-base-content text-base-100'
+                    : 'text-base-content/45 hover:bg-base-content/5 hover:text-base-content'
+                }`}
                 onClick={() => setChart(value)}
                 aria-pressed={chart === value}
               >
-                <Icon className="size-4" />
+                <Icon className="size-3.5" />
                 <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
-              className="select select-sm"
+              className="select select-sm w-auto rounded-[3px] border-base-300 font-mono text-[11px] uppercase tracking-[0.06em]"
               value={range}
               onChange={(event) => setRange(event.target.value as RangePreset)}
               aria-label="Range"
@@ -220,7 +235,7 @@ export function TrackerDetailPage() {
               ))}
             </select>
             <select
-              className="select select-sm"
+              className="select select-sm w-auto rounded-[3px] border-base-300 font-mono text-[11px] uppercase tracking-[0.06em]"
               value={granularity}
               onChange={(event) => setGranularity(event.target.value as Granularity)}
               aria-label="Granularity"
@@ -232,7 +247,7 @@ export function TrackerDetailPage() {
             </select>
             {tracker.kind === 'numeric' && (
               <select
-                className="select select-sm"
+                className="select select-sm w-auto rounded-[3px] border-base-300 font-mono text-[11px] uppercase tracking-[0.06em]"
                 value={aggregate}
                 onChange={(event) => setAggregate(event.target.value as 'sum' | 'avg')}
                 aria-label="Aggregate"
@@ -244,7 +259,7 @@ export function TrackerDetailPage() {
           </div>
         </div>
 
-        <div className="mt-4 h-72 w-full sm:h-80">
+        <div className="mt-4 h-72 w-full border-t border-base-300 pt-4 sm:h-80">
           {chartLoading ? (
             <Spinner label="Loading chart…" />
           ) : (
@@ -260,8 +275,8 @@ export function TrackerDetailPage() {
         </div>
 
         {summary && tracker.goal && summary.periodsTotal > 0 && (
-          <p className="mt-2 text-xs text-base-content/50">
-            On target in {summary.periodsCompleted} of {summary.periodsTotal} {tracker.goal.period}s.
+          <p className="num mt-2 text-[11px] uppercase tracking-[0.08em] text-base-content/40">
+            on target in {summary.periodsCompleted} of {summary.periodsTotal} {tracker.goal.period}s
           </p>
         )}
       </section>
@@ -284,10 +299,10 @@ export function TrackerDetailPage() {
 
 function StatBox({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="surface p-4">
-      <p className="stat-label">{label}</p>
-      <p className="mt-1 truncate text-xl font-semibold tabular-nums">{value}</p>
-      {hint && <p className="mt-0.5 truncate text-[11px] text-base-content/40">{hint}</p>}
+    <div className="flex-1 py-3.5 sm:px-5 sm:first:pl-0 sm:last:pr-0">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="num mt-1.5 truncate text-xl leading-none">{value}</dd>
+      {hint && <p className="mt-1.5 truncate text-[11px] text-base-content/35">{hint}</p>}
     </div>
   )
 }

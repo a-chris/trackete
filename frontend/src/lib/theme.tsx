@@ -72,7 +72,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.colorScheme = resolved
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', resolved === 'dark' ? '#12141c' : '#fbfbfd')
+      ?.setAttribute('content', resolved === 'dark' ? '#171512' : '#fbfaf7')
   }, [resolved])
 
   const setMode = useCallback((next: ThemeMode) => {

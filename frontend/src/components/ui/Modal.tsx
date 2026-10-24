@@ -131,10 +131,10 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`modal-box ${wide ? 'max-w-2xl' : 'max-w-lg'}`}
+        className={`modal-box rounded-[4px] border border-base-300 ${wide ? 'max-w-2xl' : 'max-w-lg'}`}
       >
         <div className="flex items-start justify-between gap-4">
-          <h3 id={titleId} className="text-lg font-semibold tracking-tight">
+          <h3 id={titleId} className="display text-xl">
             {title}
           </h3>
           <button
@@ -147,7 +147,9 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
           </button>
         </div>
         <div className="mt-4">{children}</div>
-        {footer && <div className="modal-action">{footer}</div>}
+        {footer && (
+          <div className="modal-action mt-6 gap-2 border-t border-base-300 pt-4">{footer}</div>
+        )}
       </div>
       <button
         type="button"
