@@ -136,6 +136,10 @@ export function useSharingMutations(trackerId: string) {
       mutationFn: (invitationId: string) => api.resendInvitation(trackerId, invitationId),
       onSuccess: invalidate,
     }),
+    cancelInvite: useMutation({
+      mutationFn: (invitationId: string) => api.cancelInvitation(trackerId, invitationId),
+      onSuccess: invalidate,
+    }),
     removeMember: useMutation({
       mutationFn: (memberId: string) => api.removeMember(trackerId, memberId),
       onSuccess: invalidate,

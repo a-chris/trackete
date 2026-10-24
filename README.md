@@ -100,8 +100,10 @@ valid for seven days:
   a member can change only their own entries.
 
 Invitations are always recorded, even when delivery fails — such an invitation
-shows as *not delivered* and the owner can resend it. Invitation history survives
-rejection and removal so the invite field can suggest addresses you used before.
+shows as *pending* and the owner can resend it, or cancel it so the address
+stops counting as shared. An accepted member is removed with the same list, and
+invitation history survives rejection and removal so the invite field can
+suggest addresses you used before.
 
 In development, `docker compose` starts [Mailcatcher](http://localhost:1080)
 and the app sends invitations to it by default, so invite mails — links

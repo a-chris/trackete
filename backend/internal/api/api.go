@@ -99,6 +99,7 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 		protected.GET("/trackers/:id/sharing", a.trackerSharing)
 		protected.POST("/trackers/:id/invitations", a.createInvitation)
 		protected.POST("/trackers/:id/invitations/:inviteId/resend", a.resendInvitation)
+		protected.DELETE("/trackers/:id/invitations/:inviteId", a.cancelInvitation)
 		protected.DELETE("/trackers/:id/members/:memberId", a.removeMember)
 		protected.GET("/sharing/suggestions", a.inviteSuggestions)
 

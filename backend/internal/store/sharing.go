@@ -103,6 +103,25 @@ func (s *Store) RemoveMember(ctx context.Context, trackerID, memberID string) er
 	return err
 }
 
+// CancelInvitation withdraws an invitation that has not been accepted. It only
+// matches an invitation that is still open, so a repeated cancel cannot revive
+// or re-settle a terminal row.
+func (s *Store) CancelInvitation(ctx context.Context, trackerID, inviteID string) (*model.Invitation, error) {
+	ts := formatTime(now())
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE invitations SET status = ?, updated_at = ?, settled_at = ?
+		 WHERE id = ? AND tracker_id = ? AND status IN ('pending', 'delivered')`,
+		model.InviteRemoved, ts, ts, inviteID, trackerID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := expectOne(res); err != nil {
+		return nil, err
+	}
+	return s.InvitationByID(ctx, inviteID)
+}
+
 const invitationColumns = `i.id, i.tracker_id, t.name, u.name, i.email, i.status, i.created_at, i.expires_at`
 
 const invitationJoins = `FROM invitations i

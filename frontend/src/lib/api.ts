@@ -114,6 +114,10 @@ export const api = {
     request<Invitation>(`/api/trackers/${trackerId}/invitations/${invitationId}/resend`, {
       method: 'POST',
     }),
+  cancelInvitation: (trackerId: string, invitationId: string) =>
+    request<Invitation>(`/api/trackers/${trackerId}/invitations/${invitationId}`, {
+      method: 'DELETE',
+    }),
   removeMember: (trackerId: string, memberId: string) =>
     request<{ ok: true }>(`/api/trackers/${trackerId}/members/${memberId}`, { method: 'DELETE' }),
   inviteSuggestions: () =>
