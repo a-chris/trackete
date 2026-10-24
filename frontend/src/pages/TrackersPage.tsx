@@ -70,7 +70,7 @@ export function TrackersPage() {
     return (
       <div
         key={tracker.id}
-        className={`group flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
+        className={`group relative flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
           tracker.archived ? 'opacity-70' : ''
         }`}
       >
@@ -86,7 +86,7 @@ export function TrackersPage() {
           <div className="flex items-baseline gap-2">
             <Link
               to={`/trackers/${tracker.id}`}
-              className="truncate text-[15px] font-medium leading-tight hover:underline hover:decoration-base-content/30 hover:underline-offset-4"
+              className="truncate text-[15px] font-medium leading-tight after:absolute after:inset-0 after:content-[''] hover:underline hover:decoration-base-content/30 hover:underline-offset-4"
               title={tracker.name}
             >
               {tracker.name}
@@ -119,7 +119,8 @@ export function TrackersPage() {
         {/* Metadata, archiving and deletion belong to the owner; a member only
             sees their own entries and the charts. */}
         {tracker.role !== 'member' && (
-        <div className="flex shrink-0 items-center gap-0.5">
+          // Sitting above the row-wide link overlay, so these buttons keep their own clicks.
+          <div className="relative z-10 flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
