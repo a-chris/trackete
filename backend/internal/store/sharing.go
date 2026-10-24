@@ -243,10 +243,11 @@ func (s *Store) ListInvitations(ctx context.Context, trackerID string) ([]model.
 	return out, rows.Err()
 }
 
-// OpenInvitationCounts returns, for each tracker ID, how many of its
-// invitations are still pending or delivered. Trackers with none are absent.
-func (s *Store) OpenInvitationCounts(ctx context.Context, trackerIDs []string) (map[string]int, error) {
-	out := make(map[string]int, len(trackerIDs))
+// SharedWithEmails returns, for each tracker ID, the addresses the tracker is
+// shared with: accepted members other than the owner, plus invitations that are
+// still open. Trackers shared with nobody are absent from the map.
+func (s *Store) SharedWithEmails(ctx context.Context, trackerIDs []string) (map[string][]string, error) {
+	out := make(map[string][]string, len(trackerIDs))
 	if len(trackerIDs) == 0 {
 		return out, nil
 	}
@@ -255,26 +256,51 @@ func (s *Store) OpenInvitationCounts(ctx context.Context, trackerIDs []string) (
 		args[i] = id
 	}
 	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(trackerIDs)), ",")
-	rows, err := s.db.QueryContext(ctx,
-		`SELECT tracker_id, COUNT(1) FROM invitations
-		 WHERE status IN ('pending', 'delivered') AND tracker_id IN (`+placeholders+`) GROUP BY tracker_id`,
+
+	add := func(trackerID, email string) {
+		for _, seen := range out[trackerID] {
+			if seen == email {
+				return
+			}
+		}
+		out[trackerID] = append(out[trackerID], email)
+	}
+
+	memberRows, err := s.db.QueryContext(ctx,
+		`SELECT m.tracker_id, u.email FROM tracker_members m JOIN users u ON u.id = m.user_id
+		 WHERE m.role = ? AND m.tracker_id IN (`+placeholders+`) ORDER BY u.email`,
+		append([]any{model.RoleMember}, args...)...)
+	if err != nil {
+		return nil, err
+	}
+	defer memberRows.Close()
+	for memberRows.Next() {
+		var trackerID, email string
+		if err := memberRows.Scan(&trackerID, &email); err != nil {
+			return nil, err
+		}
+		add(trackerID, email)
+	}
+	if err := memberRows.Err(); err != nil {
+		return nil, err
+	}
+
+	inviteRows, err := s.db.QueryContext(ctx,
+		`SELECT tracker_id, email FROM invitations
+		 WHERE status IN ('pending', 'delivered') AND tracker_id IN (`+placeholders+`) ORDER BY email`,
 		args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var (
-			trackerID string
-			count     int
-		)
-		if err := rows.Scan(&trackerID, &count); err != nil {
+	defer inviteRows.Close()
+	for inviteRows.Next() {
+		var trackerID, email string
+		if err := inviteRows.Scan(&trackerID, &email); err != nil {
 			return nil, err
 		}
-		out[trackerID] = count
+		add(trackerID, email)
 	}
-	return out, rows.Err()
+	return out, inviteRows.Err()
 }
 
 // InviteSuggestions lists addresses the user invited before, newest first, so

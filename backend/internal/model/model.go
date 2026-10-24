@@ -81,10 +81,10 @@ type Tracker struct {
 	// Role is the caller's membership on this tracker (owner or member). It is
 	// empty only for a tracker handed back without an access check.
 	Role string `json:"role,omitempty"`
-	// OpenInvitations counts invitations that are pending or delivered. It is
-	// populated only by the list endpoint, where owners look for the status of
-	// a share request.
-	OpenInvitations int `json:"openInvitations,omitempty"`
+	// SharedWith lists the addresses this tracker is shared with, outside the
+	// owner. It is populated only by the list endpoint, where the owner wants
+	// to see who has access without opening the tracker.
+	SharedWith []string `json:"sharedWith,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

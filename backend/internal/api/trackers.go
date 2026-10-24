@@ -173,13 +173,13 @@ func (a *API) listTrackers(c *gin.Context) {
 	for i, tracker := range trackers {
 		ids[i] = tracker.ID
 	}
-	counts, err := a.store.OpenInvitationCounts(c.Request.Context(), ids)
+	shared, err := a.store.SharedWithEmails(c.Request.Context(), ids)
 	if err != nil {
 		failStore(c, err)
 		return
 	}
 	for i := range trackers {
-		trackers[i].OpenInvitations = counts[trackers[i].ID]
+		trackers[i].SharedWith = shared[trackers[i].ID]
 	}
 	c.JSON(http.StatusOK, gin.H{"trackers": trackers})
 }
