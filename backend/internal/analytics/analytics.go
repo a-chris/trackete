@@ -4,6 +4,7 @@ package analytics
 
 import (
 	"math"
+	"sort"
 	"time"
 
 	"github.com/a-chris/trackete/backend/internal/model"
@@ -99,6 +100,10 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 
 	daily := make(map[string]float64, len(entries))
 	logged := make(map[string]bool, len(entries))
+	// members keeps the same window split by author so line/bar/area charts can
+	// draw one series per member. A single author leaves it unused, which keeps
+	// the payload of an unshared tracker exactly as it was.
+	members := make(map[string]*memberWindow, 2)
 	// Streaks look further back than the chart window, so history keeps every
 	// day we were given while daily/logged stay clipped to [from, to].
 	historyDaily := make(map[string]float64, len(entries))
@@ -124,13 +129,35 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 		if kind == model.KindBoolean {
 			value = boolValue(value)
 		}
-		historyDaily[key] = value
+		// Several members may log the same day: the combined view adds numeric
+		// values up and treats a boolean day as done when anyone did it. For a
+		// single author this is the value itself, so the payload is unchanged.
+		if kind == model.KindBoolean {
+			historyDaily[key] = boolValue(historyDaily[key] + value)
+		} else {
+			historyDaily[key] += value
+		}
 		historyLogged[key] = true
 		if d.Before(from) {
 			continue
 		}
-		daily[key] = value
+		if kind == model.KindBoolean {
+			daily[key] = boolValue(daily[key] + value)
+		} else {
+			daily[key] += value
+		}
 		logged[key] = true
+
+		window := members[e.UserID]
+		if window == nil {
+			window = &memberWindow{name: e.UserName, daily: map[string]float64{}, logged: map[string]bool{}}
+			members[e.UserID] = window
+		}
+		if window.name == "" {
+			window.name = e.UserName
+		}
+		window.daily[key] = value
+		window.logged[key] = true
 	}
 
 	keys, values, present := buildBuckets(from, to, gran, daily, logged, kind, o.Aggregate)
@@ -146,6 +173,9 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 		Labels:      keys,
 		Series:      []model.Series{{Name: seriesName, Data: values}},
 	}
+	if len(members) > 1 {
+		data.Series = buildMemberSeries(members, kind, o.Aggregate, from, to, gran)
+	}
 	if o.ChartType == "" {
 		data.ChartType = model.ChartLine
 	}
@@ -158,8 +188,14 @@ func Build(entries []model.Entry, o Options) model.ChartData {
 	case model.ChartHeatmap:
 		data.Heatmap = buildHeatmap(from, to, daily, logged)
 		data.Series = nil
+		if len(members) > 1 {
+			data.Heatmap = buildMemberHeatmap(from, to, members)
+		}
 	case model.ChartDonut:
 		data.Labels, data.Series = buildDonut(span, kind, daily, logged)
+		if len(members) > 1 {
+			data.Labels, data.Series = buildMemberDonut(members, kind)
+		}
 	case model.ChartStat:
 		data.Stat = buildStat(summary, keys, values, present, o, kind)
 		data.Series = nil
@@ -449,10 +485,7 @@ func bestWeekday(kind string, daily map[string]float64, logged map[string]bool) 
 }
 
 func buildHeatmap(from, to time.Time, daily map[string]float64, logged map[string]bool) *model.Heatmap {
-	columns := make([]string, 0, 64)
-	for cursor := startOfWeek(from); !startOfWeek(to).Before(cursor); cursor = cursor.AddDate(0, 0, 7) {
-		columns = append(columns, cursor.Format(DayLayout))
-	}
+	columns := heatmapColumns(from, to)
 
 	rows := make([]model.HeatRow, 0, 7)
 	for idx, name := range weekdayNames {
@@ -474,6 +507,107 @@ func buildHeatmap(from, to time.Time, daily map[string]float64, logged map[strin
 		rows = append(rows, model.HeatRow{Name: name, Data: values})
 	}
 	return &model.Heatmap{Columns: columns, Rows: rows}
+}
+
+// memberWindow is one author's values in the rendered window.
+type memberWindow struct {
+	name   string
+	daily  map[string]float64
+	logged map[string]bool
+}
+
+func sortedMembers(members map[string]*memberWindow) []*memberWindow {
+	out := make([]*memberWindow, 0, len(members))
+	for _, window := range members {
+		out = append(out, window)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].displayName() != out[j].displayName() {
+			return out[i].displayName() < out[j].displayName()
+		}
+		return out[i].name < out[j].name
+	})
+	return out
+}
+
+func (w *memberWindow) displayName() string {
+	if w.name == "" {
+		return "Member"
+	}
+	return w.name
+}
+
+// buildMemberSeries draws one series per member with the same buckets as the
+// combined chart, so the x-axis still lines up with the summary.
+func buildMemberSeries(members map[string]*memberWindow, kind, aggregate string, from, to time.Time, gran string) []model.Series {
+	windows := sortedMembers(members)
+	out := make([]model.Series, 0, len(windows))
+	for _, window := range windows {
+		_, values, _ := buildBuckets(from, to, gran, window.daily, window.logged, kind, aggregate)
+		out = append(out, model.Series{Name: window.displayName(), Data: values})
+	}
+	return out
+}
+
+// buildMemberDonut shows each member's contribution instead of a combined
+// breakdown; the combined numbers stay available in Summary.
+func buildMemberDonut(members map[string]*memberWindow, kind string) ([]string, []model.Series) {
+	windows := sortedMembers(members)
+	labels := make([]string, 0, len(windows))
+	values := make([]float64, 0, len(windows))
+	for _, window := range windows {
+		total := 0.0
+		for key, value := range window.daily {
+			if window.logged[key] {
+				total += value
+			}
+		}
+		labels = append(labels, window.displayName())
+		values = append(values, round2(total))
+	}
+	seriesName := "Total"
+	if kind == model.KindBoolean {
+		seriesName = "Days"
+	}
+	return labels, []model.Series{{Name: seriesName, Data: values}}
+}
+
+// buildMemberHeatmap swaps the weekday rows for one row per member: with several
+// people logging the same tracker, "who" is more useful than "which weekday".
+func buildMemberHeatmap(from, to time.Time, members map[string]*memberWindow) *model.Heatmap {
+	columns := heatmapColumns(from, to)
+	windows := sortedMembers(members)
+	rows := make([]model.HeatRow, 0, len(windows))
+	for _, window := range windows {
+		values := make([]float64, len(columns))
+		for col, colStart := range columns {
+			start, err := time.Parse(DayLayout, colStart)
+			if err != nil {
+				continue
+			}
+			for offset := 0; offset < 7; offset++ {
+				day := start.AddDate(0, 0, offset)
+				if day.Before(from) || day.After(to) {
+					continue
+				}
+				key := day.Format(DayLayout)
+				if window.logged[key] {
+					values[col] += window.daily[key]
+				}
+			}
+			values[col] = round2(values[col])
+		}
+		rows = append(rows, model.HeatRow{Name: window.displayName(), Data: values})
+	}
+	return &model.Heatmap{Columns: columns, Rows: rows}
+}
+
+func heatmapColumns(from, to time.Time) []string {
+	columns := make([]string, 0, 64)
+	for cursor := startOfWeek(from); !startOfWeek(to).Before(cursor); cursor = cursor.AddDate(0, 0, 7) {
+		columns = append(columns, cursor.Format(DayLayout))
+	}
+	return columns
 }
 
 func buildDonut(span int, kind string, daily map[string]float64, logged map[string]bool) ([]string, []model.Series) {
