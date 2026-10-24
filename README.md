@@ -113,9 +113,8 @@ change once your accounts exist.
 
 ## Sharing trackers
 
-A tracker owner can invite people by email, from the tracker form or the Share
-button on the tracker page. The link in the invitation stays valid for seven
-days.
+A tracker owner can invite people by email from the Share button on the tracker
+page. The link in the invitation stays valid for seven days.
 
 - An existing account is signed in by accepting the link.
 - A new invitee picks a display name and password on the acceptance page. This
