@@ -87,7 +87,7 @@ STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 
 ## Sharing trackers
 
-A tracker owner can invite people by email, from the tracker form or the Share
+A tracker owner can invite people by email, from the Share
 button on the tracker page. Invitees receive a link that stays
 valid for seven days:
 

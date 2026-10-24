@@ -61,8 +61,6 @@ export interface TrackerInput {
   unit: string
   goal: Goal | null
   archived: boolean
-  /** Optional invite list. Omitted means the tracker is created unshared. */
-  shareWith?: string[]
 }
 
 export interface TrackerMember {
