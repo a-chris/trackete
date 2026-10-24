@@ -35,6 +35,8 @@ export interface Tracker {
   archived: boolean
   /** How the signed-in user relates to this tracker; the owner manages it. */
   role?: TrackerRole
+  /** Pending or delivered invitations; set by the tracker list only. */
+  openInvitations?: number
   createdAt: string
   updatedAt: string
 }
