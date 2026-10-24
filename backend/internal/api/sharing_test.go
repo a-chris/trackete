@@ -79,19 +79,22 @@ func TestTrackerSharingLifecycle(t *testing.T) {
 		t.Fatalf("invitation address must be normalized, got %q", created.Invitations[0].Email)
 	}
 
-	// The open invitation is counted on the tracker list, so the owner sees
-	// the share status without opening the tracker.
+	// The list tells the owner who the tracker is shared with: an address with
+	// an open invitation counts, so a share request is visible right away.
 	var listed struct {
 		Trackers []struct {
-			ID              string `json:"id"`
-			OpenInvitations int    `json:"openInvitations"`
+			ID         string   `json:"id"`
+			SharedWith []string `json:"sharedWith"`
 		} `json:"trackers"`
 	}
 	if rec := c.doJSON("GET", "/api/trackers", "", &listed); rec.Code != http.StatusOK {
 		t.Fatalf("list trackers: %d %s", rec.Code, rec.Body.String())
 	}
-	if len(listed.Trackers) != 1 || listed.Trackers[0].ID != created.ID || listed.Trackers[0].OpenInvitations != 1 {
-		t.Fatalf("expected the open invitation counted on the list, got %+v", listed.Trackers)
+	if len(listed.Trackers) != 1 || listed.Trackers[0].ID != created.ID {
+		t.Fatalf("unexpected tracker list: %+v", listed.Trackers)
+	}
+	if got := listed.Trackers[0].SharedWith; len(got) != 1 || got[0] != "friend@example.com" {
+		t.Fatalf("expected the invited address on the list, got %+v", got)
 	}
 
 	var sharing sharingPayload
@@ -156,20 +159,20 @@ func TestTrackerSharingLifecycle(t *testing.T) {
 	if rec := friend.do("GET", "/api/trackers", ""); rec.Code != http.StatusOK {
 		t.Fatalf("member tracker list: %d", rec.Code)
 	}
-	// Once the invitation is accepted it no longer counts as open. A fresh
-	// decode target is required: encoding/json reuses slice elements and does
-	// not zero fields the response omits.
+	// Once the invitation is accepted the address stays on the list, now as a
+	// member. A fresh decode target is required: encoding/json reuses slice
+	// elements and does not zero fields the response omits.
 	var listedAfterJoin struct {
 		Trackers []struct {
-			ID              string `json:"id"`
-			OpenInvitations int    `json:"openInvitations"`
+			ID         string   `json:"id"`
+			SharedWith []string `json:"sharedWith"`
 		} `json:"trackers"`
 	}
 	if rec := c.doJSON("GET", "/api/trackers", "", &listedAfterJoin); rec.Code != http.StatusOK {
 		t.Fatalf("list after join: %d %s", rec.Code, rec.Body.String())
 	}
-	if listedAfterJoin.Trackers[0].OpenInvitations != 0 {
-		t.Fatalf("accepted invitation should not count as open, got %+v", listedAfterJoin.Trackers)
+	if got := listedAfterJoin.Trackers[0].SharedWith; len(got) != 1 || got[0] != "friend@example.com" {
+		t.Fatalf("accepted invitation should stay listed as a member, got %+v", got)
 	}
 
 	// Members log data but never change the tracker, invite, or remove people.

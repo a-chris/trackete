@@ -14,6 +14,18 @@ import { goalLabel } from '../lib/format'
 import type { Tracker } from '../lib/types'
 import { trackerToInput } from '../lib/trackers'
 
+// The metadata line drops whatever does not apply: a tracker without a goal
+// says nothing about goals instead of announcing the absence.
+function trackerMeta(tracker: Tracker): string[] {
+  const shared = tracker.sharedWith ?? []
+  return [
+    goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
+      (tracker.kind === 'boolean' ? null : tracker.unit || null),
+    shared.length > 0 ? `Shared with ${shared.join(', ')}` : null,
+    `since ${formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}`,
+  ].filter((part): part is string => Boolean(part))
+}
+
 export function TrackersPage() {
   const toast = useToast()
   const { data: trackers = [], isLoading, isError, error, refetch, isFetching } = useTrackers(true)
@@ -75,23 +87,20 @@ export function TrackersPage() {
           >
             {tracker.name}
           </Link>
-          <span className="eyebrow shrink-0 text-base-content/60">
+          <span className="eyebrow shrink-0 font-semibold text-base-content/80">
             {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
           </span>
           {tracker.role === 'member' && (
-            <span className="eyebrow shrink-0 text-base-content/60">shared</span>
-          )}
-          {tracker.role !== 'member' && (tracker.openInvitations ?? 0) > 0 && (
-            <span className="eyebrow shrink-0 text-base-content/60">
-              {tracker.openInvitations} invited
-            </span>
+            <span className="eyebrow shrink-0 font-semibold text-base-content/80">shared</span>
           )}
         </div>
-        <p className="eyebrow mt-1 truncate text-[10px] text-base-content/60">
-          {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
-            (tracker.kind === 'boolean' ? 'no goal set' : tracker.unit || 'unitless')}
-          <span className="mx-1.5 text-base-content/40">/</span>
-          since {formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
+        <p className="eyebrow mt-1 truncate font-semibold text-base-content/80">
+          {trackerMeta(tracker).map((part, index) => (
+            <span key={part}>
+              {index > 0 && <span className="mx-1.5 text-base-content/40">/</span>}
+              {part}
+            </span>
+          ))}
         </p>
         {tracker.description && (
           <p className="mt-1 line-clamp-1 text-xs text-base-content/65">{tracker.description}</p>
