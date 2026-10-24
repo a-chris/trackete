@@ -96,7 +96,7 @@ export function TrackersPage() {
       {/* Metadata, archiving and deletion belong to the owner; a member only
           sees their own entries and the charts. */}
       {tracker.role !== 'member' && (
-      <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
           className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
