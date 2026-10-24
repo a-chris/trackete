@@ -16,6 +16,8 @@ services.
 - Drag-and-resize dashboards, multiple dashboards, live statistics (streaks,
   completion, strongest weekday, on-target periods).
 - Multi-user accounts with per-user data isolation, light and dark themes.
+- Shared trackers: invite people by email, each member logs their own value
+  per day, and the charts show one series per member with a combined summary.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data model, chart
 semantics and API.
@@ -77,6 +79,7 @@ change once your accounts exist.
 | `TOKEN_TTL` | `720h` | Session lifetime (30 days). |
 | `DB_PATH` | `/data/trackete.db` | The SQLite file. Keep overrides under `/data`, otherwise the database lands outside the volume. |
 | `PORT` | `8080` | HTTP port. In Compose this sets the published host port; the container always listens on 8080. |
+| `APP_URL` | `http://localhost:8080` | The origin people actually open, used to build invitation links. Set it to your real address (`https://trackete.example.com`), otherwise invite emails point at the wrong host. |
 
 ### Optional
 
@@ -94,6 +97,46 @@ change once your accounts exist.
   `/app/dist`.
 - `CORS_ORIGINS`: extra origins allowed to make credentialed requests. For
   cross-origin development only, and wildcards are ignored.
+- `MAIL_TRANSPORT`: how invitation emails leave the process, one of `smtp`,
+  `file` or `log`. Empty means `smtp` when `SMTP_HOST` is set, otherwise `file`.
+- `SMTP_HOST`, `SMTP_PORT`: mail server and port, default `587`, STARTTLS is used
+  when offered. Without a host, invitations stay pending and can be resent later.
+- `SMTP_USERNAME`, `SMTP_PASSWORD`: credentials for SMTP AUTH, if your server
+  needs them.
+- `MAIL_FROM`: sender address, default `Trackete <no-reply@trackete.local>`. Many
+  providers require a verified sender.
+- `MAIL_FILE_PATH`: outbox file for the `file` transport, default `outbox.log`
+  next to `DB_PATH`, so `/data/outbox.log` in Docker. This is where invite links
+  appear when no SMTP server is configured.
+
+## Sharing trackers
+
+A tracker owner can invite people by email, from the tracker form or the Share
+button on a tracker that already has members. The link in the invitation stays
+valid for seven days.
+
+- An existing account is signed in by accepting the link.
+- A new invitee picks a display name and password on the acceptance page. This
+  works even with `ALLOW_REGISTRATION=false`, so an invite-only instance is
+  possible: close registration and hand out invitations.
+- Members log their own value per day and see every member's entries and charts.
+  Only the owner can edit the tracker, invite people or remove members, and a
+  member can change only their own entries.
+
+Invitations are always recorded, even when delivery fails. Such an invitation
+shows as *not delivered* and the owner can resend it. Invitation history survives
+rejection and removal, so the invite field can suggest addresses used before.
+
+Without an SMTP server the `file` transport writes each message, links included,
+to `MAIL_FILE_PATH`, which is `outbox.log` next to the database by default:
+
+```bash
+docker compose exec trackete tail -n 40 /data/outbox.log
+```
+
+Copy the `/invite/...` link from that file to accept the invitation yourself
+during development. `MAIL_TRANSPORT=log` writes the same content to the container
+log instead.
 
 ## Behind HTTPS
 
@@ -140,8 +183,8 @@ Layout: `backend/` (Go API, SQLite store, embedded migrations, analytics) and
 
 ## Notes
 
-- One value per tracker per day. Multiple entries per day and entry
-  variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
+- Each member logs one value per tracker per day. Multiple entries per member
+  per day and entry variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
 - Charts render at most ten years of history. Stored rows are never deleted.
 - Registration can be closed. Duplicate-email responses reveal that an account
   exists, which is intentional for a self-hosted install; close registration
