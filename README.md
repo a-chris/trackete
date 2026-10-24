@@ -100,7 +100,9 @@ change once your accounts exist.
 - `MAIL_TRANSPORT`: how invitation emails leave the process, one of `smtp`,
   `file` or `log`. Empty means `smtp` when `SMTP_HOST` is set, otherwise `file`.
 - `SMTP_HOST`, `SMTP_PORT`: mail server and port, default `587`, STARTTLS is used
-  when offered. Without a host, invitations stay pending and can be resent later.
+  when offered. Docker Compose points these at the bundled Mailcatcher
+  (`mailcatcher:1025`); set your provider for production. Without a host,
+  invitations stay pending and can be resent later.
 - `SMTP_USERNAME`, `SMTP_PASSWORD`: credentials for SMTP AUTH, if your server
   needs them.
 - `MAIL_FROM`: sender address, default `Trackete <no-reply@trackete.local>`. Many
@@ -112,8 +114,8 @@ change once your accounts exist.
 ## Sharing trackers
 
 A tracker owner can invite people by email, from the tracker form or the Share
-button on a tracker that already has members. The link in the invitation stays
-valid for seven days.
+button on the tracker page. The link in the invitation stays valid for seven
+days.
 
 - An existing account is signed in by accepting the link.
 - A new invitee picks a display name and password on the acceptance page. This
@@ -127,16 +129,20 @@ Invitations are always recorded, even when delivery fails. Such an invitation
 shows as *not delivered* and the owner can resend it. Invitation history survives
 rejection and removal, so the invite field can suggest addresses used before.
 
-Without an SMTP server the `file` transport writes each message, links included,
-to `MAIL_FILE_PATH`, which is `outbox.log` next to the database by default:
+In development, `docker compose` starts [Mailcatcher](http://localhost:1080)
+and the app sends invitations to it by default, so invite mails, links
+included, appear in its web UI. For production, point `SMTP_HOST` and
+`SMTP_PORT` at your real mail server.
+
+If no SMTP server is configured at all, the `file` transport writes each
+message, links included, to `MAIL_FILE_PATH`, which is `outbox.log` next to
+the database by default:
 
 ```bash
 docker compose exec trackete tail -n 40 /data/outbox.log
 ```
 
-Copy the `/invite/...` link from that file to accept the invitation yourself
-during development. `MAIL_TRANSPORT=log` writes the same content to the container
-log instead.
+`MAIL_TRANSPORT=log` writes the same content to the container log instead.
 
 ## Behind HTTPS
 

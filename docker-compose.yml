@@ -17,8 +17,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       APP_URL: ${APP_URL:-http://localhost:8080}
       MAIL_TRANSPORT: ${MAIL_TRANSPORT:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_HOST: ${SMTP_HOST:-mailcatcher}
+      SMTP_PORT: ${SMTP_PORT:-1025}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: "${MAIL_FROM:-Trackete <no-reply@trackete.local>}"
@@ -32,6 +32,13 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  mailcatcher:
+    image: schickling/mailcatcher:latest
+    restart: always
+    ports:
+      - '1025:1025' # SMTP
+      - '1080:1080' # Web UI (http://localhost:1080)
 
 volumes:
   trackete-data:
