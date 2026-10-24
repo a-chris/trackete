@@ -243,6 +243,40 @@ func (s *Store) ListInvitations(ctx context.Context, trackerID string) ([]model.
 	return out, rows.Err()
 }
 
+// OpenInvitationCounts returns, for each tracker ID, how many of its
+// invitations are still pending or delivered. Trackers with none are absent.
+func (s *Store) OpenInvitationCounts(ctx context.Context, trackerIDs []string) (map[string]int, error) {
+	out := make(map[string]int, len(trackerIDs))
+	if len(trackerIDs) == 0 {
+		return out, nil
+	}
+	args := make([]any, len(trackerIDs))
+	for i, id := range trackerIDs {
+		args[i] = id
+	}
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(trackerIDs)), ",")
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT tracker_id, COUNT(1) FROM invitations
+		 WHERE status IN ('pending', 'delivered') AND tracker_id IN (`+placeholders+`) GROUP BY tracker_id`,
+		args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			trackerID string
+			count     int
+		)
+		if err := rows.Scan(&trackerID, &count); err != nil {
+			return nil, err
+		}
+		out[trackerID] = count
+	}
+	return out, rows.Err()
+}
+
 // InviteSuggestions lists addresses the user invited before, newest first, so
 // the share field can autocomplete instead of making them retype an address.
 func (s *Store) InviteSuggestions(ctx context.Context, userID string, limit int) ([]model.InviteSuggestion, error) {

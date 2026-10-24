@@ -81,6 +81,11 @@ export function TrackersPage() {
           {tracker.role === 'member' && (
             <span className="eyebrow shrink-0 text-base-content/60">shared</span>
           )}
+          {tracker.role !== 'member' && (tracker.openInvitations ?? 0) > 0 && (
+            <span className="eyebrow shrink-0 text-base-content/60">
+              {tracker.openInvitations} invited
+            </span>
+          )}
         </div>
         <p className="eyebrow mt-1 truncate text-[10px] text-base-content/60">
           {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
