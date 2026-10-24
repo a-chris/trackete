@@ -33,6 +33,24 @@ func ValidChartType(v string) bool {
 	return false
 }
 
+// Roles a user can hold on a tracker. Only the owner may change tracker
+// metadata, invite people or remove members.
+const (
+	RoleOwner  = "owner"
+	RoleMember = "member"
+)
+
+// Invitation lifecycle. pending means the address was recorded but delivery
+// failed; delivered means the message reached the transport. accepted, rejected
+// and removed are terminal and retained as history.
+const (
+	InvitePending   = "pending"
+	InviteDelivered = "delivered"
+	InviteAccepted  = "accepted"
+	InviteRejected  = "rejected"
+	InviteRemoved   = "removed"
+)
+
 // Goal is an optional target attached to a tracker.
 type Goal struct {
 	Type   string  `json:"type"`   // at_least | at_most
@@ -51,23 +69,62 @@ type User struct {
 }
 
 type Tracker struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Icon        string `json:"icon"`
+	Color       string `json:"color"`
+	Kind        string `json:"kind"`
+	Unit        string `json:"unit"`
+	Goal        *Goal  `json:"goal"`
+	Archived    bool   `json:"archived"`
+	// Role is the caller's membership on this tracker (owner or member). It is
+	// empty only for a tracker handed back without an access check.
+	Role string `json:"role,omitempty"`
+	// SharedWith lists the addresses this tracker is shared with, outside the
+	// owner. It is populated only by the list endpoint, where the owner wants
+	// to see who has access without opening the tracker.
+	SharedWith []string `json:"sharedWith,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// TrackerMember is one accepted member of a shared tracker.
+type TrackerMember struct {
+	UserID   string    `json:"userId"`
+	Email    string    `json:"email"`
+	Name     string    `json:"name"`
+	Role     string    `json:"role"`
+	JoinedAt time.Time `json:"joinedAt"`
+}
+
+// Invitation is one address invited to a tracker. It survives acceptance,
+// rejection and removal so the owner's suggestions can offer it again.
+type Invitation struct {
 	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Icon        string    `json:"icon"`
-	Color       string    `json:"color"`
-	Kind        string    `json:"kind"`
-	Unit        string    `json:"unit"`
-	Goal        *Goal     `json:"goal"`
-	Archived    bool      `json:"archived"`
+	TrackerID   string    `json:"trackerId"`
+	TrackerName string    `json:"trackerName,omitempty"`
+	InviterName string    `json:"inviterName,omitempty"`
+	Email       string    `json:"email"`
+	Status      string    `json:"status"`
 	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+}
+
+// InviteSuggestion is an address the current user invited before.
+type InviteSuggestion struct {
+	Email string `json:"email"`
+	Name  string `json:"name,omitempty"`
 }
 
 // Entry is one logged day for a tracker. Days are local calendar dates in the
 // user's timezone, stored as YYYY-MM-DD.
 type Entry struct {
-	TrackerID string    `json:"trackerId,omitempty"`
+	TrackerID string `json:"trackerId,omitempty"`
+	// UserID/UserName attribute the value to the member who logged it. Both are
+	// omitted when reading a user's own entries (the caller already knows who).
+	UserID    string    `json:"userId,omitempty"`
+	UserName  string    `json:"userName,omitempty"`
 	Day       string    `json:"day"`
 	Value     float64   `json:"value"`
 	Note      string    `json:"note"`

@@ -14,6 +14,20 @@ import { goalLabel } from '../lib/format'
 import type { Tracker } from '../lib/types'
 import { trackerToInput } from '../lib/trackers'
 
+// The row says who else logs here and what the tracker asks of you. Segments
+// that do not apply are left out instead of announced as missing.
+function trackerLines(tracker: Tracker): { shared: string | null; meta: string[] } {
+  const shared = tracker.sharedWith ?? []
+  return {
+    shared: shared.length > 0 ? `Shared with ${shared.join(', ')}` : null,
+    meta: [
+      goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
+        (tracker.kind === 'boolean' ? null : tracker.unit || null),
+      `since ${formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}`,
+    ].filter((part): part is string => Boolean(part)),
+  }
+}
+
 export function TrackersPage() {
   const toast = useToast()
   const { data: trackers = [], isLoading, isError, error, refetch, isFetching } = useTrackers(true)
@@ -51,83 +65,101 @@ export function TrackersPage() {
     })
   }
 
-  const renderRow = (tracker: Tracker) => (
-    <div
-      key={tracker.id}
-      className={`group flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
-        tracker.archived ? 'opacity-70' : ''
-      }`}
-    >
-      <span
-        className="grid size-8 shrink-0 place-items-center rounded-[3px] text-[15px] leading-none"
-        style={{ backgroundColor: `${tracker.color}1f` }}
-        aria-hidden="true"
+  const renderRow = (tracker: Tracker) => {
+    const { shared, meta } = trackerLines(tracker)
+    return (
+      <div
+        key={tracker.id}
+        className={`group relative flex items-center gap-3 py-3 sm:gap-4 sm:py-3.5 ${
+          tracker.archived ? 'opacity-70' : ''
+        }`}
       >
-        {tracker.icon}
-      </span>
+        <span
+          className="grid size-8 shrink-0 place-items-center rounded-[3px] text-[15px] leading-none"
+          style={{ backgroundColor: `${tracker.color}1f` }}
+          aria-hidden="true"
+        >
+          {tracker.icon}
+        </span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <Link
-            to={`/trackers/${tracker.id}`}
-            className="truncate text-[15px] font-medium leading-tight hover:underline hover:decoration-base-content/30 hover:underline-offset-4"
-            title={tracker.name}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <Link
+              to={`/trackers/${tracker.id}`}
+              className="truncate text-[15px] font-medium leading-tight after:absolute after:inset-0 after:content-[''] hover:underline hover:decoration-base-content/30 hover:underline-offset-4"
+              title={tracker.name}
+            >
+              {tracker.name}
+            </Link>
+            <span className="eyebrow shrink-0 font-semibold text-base-content/80">
+              {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
+            </span>
+            {tracker.role === 'member' && (
+              <span className="eyebrow shrink-0 font-semibold text-base-content/80">shared</span>
+            )}
+          </div>
+          {shared && (
+            <p className="eyebrow mt-1 truncate font-semibold text-base-content/80">{shared}</p>
+          )}
+          <p
+            className={`eyebrow ${shared ? 'mt-0.5' : 'mt-1'} truncate font-semibold text-base-content/80`}
           >
-            {tracker.name}
-          </Link>
-          <span className="eyebrow shrink-0 text-base-content/60">
-            {tracker.kind === 'boolean' ? 'yes/no' : 'number'}
-          </span>
+            {meta.map((part, index) => (
+              <span key={part}>
+                {index > 0 && <span className="mx-1.5 text-base-content/40">/</span>}
+                {part}
+              </span>
+            ))}
+          </p>
+          {tracker.description && (
+            <p className="mt-1 line-clamp-1 text-xs text-base-content/65">{tracker.description}</p>
+          )}
         </div>
-        <p className="eyebrow mt-1 truncate text-[10px] text-base-content/60">
-          {goalLabel(tracker.goal, tracker.kind, tracker.unit) ??
-            (tracker.kind === 'boolean' ? 'no goal set' : tracker.unit || 'unitless')}
-          <span className="mx-1.5 text-base-content/40">/</span>
-          since {formatDate(tracker.createdAt.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
-        </p>
-        {tracker.description && (
-          <p className="mt-1 line-clamp-1 text-xs text-base-content/65">{tracker.description}</p>
+
+        {/* Metadata, archiving and deletion belong to the owner; a member only
+            sees their own entries and the charts. */}
+        {tracker.role !== 'member' && (
+          // Sitting above the row-wide link overlay, so these buttons keep their own clicks.
+          <div className="relative z-10 flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
+            onClick={() => {
+              setEditing(tracker)
+              setModalOpen(true)
+            }}
+            title="Edit tracker"
+            aria-label={`Edit ${tracker.name}`}
+          >
+            <Pencil className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
+            onClick={() => toggleArchive(tracker)}
+            title={tracker.archived ? 'Restore tracker' : 'Archive tracker'}
+            aria-label={tracker.archived ? `Restore ${tracker.name}` : `Archive ${tracker.name}`}
+          >
+            {tracker.archived ? (
+              <ArchiveRestore className="size-3.5" />
+            ) : (
+              <Archive className="size-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
+            onClick={() => setDeleting(tracker)}
+            title="Delete tracker"
+            aria-label={`Delete ${tracker.name}`}
+          >
+            <Trash className="size-3.5" />
+          </button>
+        </div>
         )}
       </div>
-
-      <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-        <button
-          type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
-          onClick={() => {
-            setEditing(tracker)
-            setModalOpen(true)
-          }}
-          title="Edit tracker"
-          aria-label={`Edit ${tracker.name}`}
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-base-content/5 hover:text-base-content"
-          onClick={() => toggleArchive(tracker)}
-          title={tracker.archived ? 'Restore tracker' : 'Archive tracker'}
-          aria-label={tracker.archived ? `Restore ${tracker.name}` : `Archive ${tracker.name}`}
-        >
-          {tracker.archived ? (
-            <ArchiveRestore className="size-3.5" />
-          ) : (
-            <Archive className="size-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          className="grid size-8 place-items-center rounded-[3px] text-base-content/65 transition-colors hover:bg-error/10 hover:text-error"
-          onClick={() => setDeleting(tracker)}
-          title="Delete tracker"
-          aria-label={`Delete ${tracker.name}`}
-        >
-          <Trash className="size-3.5" />
-        </button>
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="space-y-8">

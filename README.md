@@ -18,6 +18,8 @@ external services.
 - **Drag-and-resize dashboards**, multiple dashboards, live statistics
   (streaks, completion, strongest weekday, on-target periods).
 - **Multi-user accounts** with per-user data isolation, light/dark themes.
+- **Shared trackers**: invite people by email, each member logs their own value
+  per day, and the charts show one series per member with a combined summary.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data model, chart
 semantics and API.
@@ -76,6 +78,47 @@ STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 | `PORT` | HTTP port, default `8080`. |
 | `STATIC_DIR` | Built SPA directory. Empty = API only (Docker sets `/app/dist`). |
 | `CORS_ORIGINS` | Comma-separated extra origins for credentialed requests. Only for cross-origin development; wildcards are ignored. |
+| `APP_URL` | Externally reachable origin used to build invitation links, default `http://localhost:8080`. Set it to the address people actually open (for example `https://trackete.example.com`), otherwise invite emails point at the wrong host. |
+| `MAIL_TRANSPORT` | How invitation emails leave the process: `smtp`, `file` or `log`. Empty means `smtp` when `SMTP_HOST` is set, otherwise `file`. |
+| `SMTP_HOST`, `SMTP_PORT` | Mail server and port. Docker compose defaults to the bundled Mailcatcher (`mailcatcher:1025`); set your provider for production. STARTTLS is used when offered. Without a host, invitations stay `pending` and can be resent later. |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` | Credentials for SMTP AUTH, if your server needs them. |
+| `MAIL_FROM` | Sender address, default `Trackete <no-reply@trackete.local>`. Many providers require a verified sender. |
+| `MAIL_FILE_PATH` | Outbox file for the `file` transport, default `outbox.log` next to `DB_PATH` (so `/data/outbox.log` in Docker). This is where invite links appear when no SMTP server is configured. |
+
+## Sharing trackers
+
+A tracker owner can invite people by email, from the Share
+button on the tracker page. Invitees receive a link that stays
+valid for seven days:
+
+- An existing account is signed in by accepting the link.
+- A new invitee picks a display name and password on the acceptance page. This
+  works even with `ALLOW_REGISTRATION=false`, so an invite-only instance is
+  possible: close registration and hand out invitations.
+- Members can log their own value per day and see every member's entries and
+  charts. Only the owner can edit the tracker, invite people or remove members;
+  a member can change only their own entries.
+
+Invitations are always recorded, even when delivery fails — such an invitation
+shows as *pending* and the owner can resend it, or cancel it so the address
+stops counting as shared. An accepted member is removed with the same list, and
+invitation history survives rejection and removal so the invite field can
+suggest addresses you used before.
+
+In development, `docker compose` starts [Mailcatcher](http://localhost:1080)
+and the app sends invitations to it by default, so invite mails — links
+included — appear in its web UI. For production, point `SMTP_HOST` and
+`SMTP_PORT` at your real mail server.
+
+If no SMTP server is configured at all, the `file` transport writes each
+message, links included, to `MAIL_FILE_PATH` (`outbox.log` next to the
+database by default):
+
+```bash
+docker compose exec trackete tail -n 40 /data/outbox.log
+```
+
+`MAIL_TRANSPORT=log` writes the same content to the container log instead.
 
 ## Running behind HTTPS
 
@@ -124,8 +167,8 @@ Layout: `backend/` (Go API, SQLite store, embedded migrations, analytics) and
 
 ## Notes
 
-- Trackete logs one value per tracker per day; multiple entries per day and
-  entry variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
+- Each member logs one value per tracker per day; multiple entries per member per
+  day and entry variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
 - Charts render at most ten years of history; stored rows are never deleted.
 - Registration can be closed; duplicate-email responses reveal that an account
   exists (intentional for a self-hosted install — close registration after

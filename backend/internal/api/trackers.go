@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"regexp"
@@ -26,6 +27,21 @@ type trackerRequest struct {
 	Unit        string      `json:"unit"`
 	Goal        *model.Goal `json:"goal"`
 	Archived    bool        `json:"archived"`
+	// ShareWith invites these addresses to the tracker. It is optional: an
+	// omitted or empty list leaves the request and its response untouched.
+	ShareWith []string `json:"shareWith"`
+}
+
+// maxInvitesPerRequest bounds how many emails one tracker create/update may
+// invite, so a single request cannot spray invitations.
+const maxInvitesPerRequest = 20
+
+// trackerResponse is the tracker payload plus the invitation outcome. The
+// embedded tracker keeps the existing JSON shape; invitations only appear when
+// the request asked to share.
+type trackerResponse struct {
+	model.Tracker
+	Invitations []model.Invitation `json:"invitations,omitempty"`
 }
 
 type entryRequest struct {
@@ -103,12 +119,67 @@ func (r trackerRequest) normalize() (*model.Tracker, error) {
 	}, nil
 }
 
+// normalizeShareWith trims, lowercases and de-duplicates invitation addresses.
+func (r trackerRequest) normalizeShareWith() ([]string, error) {
+	if len(r.ShareWith) > maxInvitesPerRequest {
+		return nil, fmt.Errorf("share with at most %d addresses at a time", maxInvitesPerRequest)
+	}
+	seen := make(map[string]bool, len(r.ShareWith))
+	out := make([]string, 0, len(r.ShareWith))
+	for _, raw := range r.ShareWith {
+		email := strings.ToLower(strings.TrimSpace(raw))
+		if email == "" {
+			continue
+		}
+		if !validEmail(email) {
+			return nil, fmt.Errorf("%q is not a valid email address", raw)
+		}
+		if seen[email] {
+			continue
+		}
+		seen[email] = true
+		out = append(out, email)
+	}
+	return out, nil
+}
+
+// shareTracker invites every address and reports the ones it could record. A
+// failed invitation is logged, never surfaced as a failure of the tracker
+// itself: the tracker already exists and the owner can retry from its page.
+func (a *API) shareTracker(c *gin.Context, tracker *model.Tracker, emails []string) []model.Invitation {
+	if len(emails) == 0 {
+		return nil
+	}
+	out := make([]model.Invitation, 0, len(emails))
+	for _, email := range emails {
+		inv, err := a.inviteByEmail(c.Request.Context(), userID(c), tracker, email)
+		if err != nil {
+			log.Printf("share tracker %s with %s: %v", tracker.ID, email, err)
+			continue
+		}
+		out = append(out, *inv)
+	}
+	return out
+}
+
 func (a *API) listTrackers(c *gin.Context) {
 	includeArchived := c.Query("includeArchived") == "true" || c.Query("includeArchived") == "1"
 	trackers, err := a.store.ListTrackers(c.Request.Context(), userID(c), includeArchived)
 	if err != nil {
 		failStore(c, err)
 		return
+	}
+	ids := make([]string, len(trackers))
+	for i, tracker := range trackers {
+		ids[i] = tracker.ID
+	}
+	shared, err := a.store.SharedWithEmails(c.Request.Context(), ids)
+	if err != nil {
+		failStore(c, err)
+		return
+	}
+	for i := range trackers {
+		trackers[i].SharedWith = shared[trackers[i].ID]
 	}
 	c.JSON(http.StatusOK, gin.H{"trackers": trackers})
 }
@@ -124,12 +195,20 @@ func (a *API) createTracker(c *gin.Context) {
 		fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	shareWith, err := req.normalizeShareWith()
+	if err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	created, err := a.store.CreateTracker(c.Request.Context(), userID(c), tracker)
 	if err != nil {
 		failStore(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, created)
+	c.JSON(http.StatusCreated, trackerResponse{
+		Tracker:     *created,
+		Invitations: a.shareTracker(c, created, shareWith),
+	})
 }
 
 func (a *API) getTracker(c *gin.Context) {
@@ -152,13 +231,21 @@ func (a *API) updateTracker(c *gin.Context) {
 		fail(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	shareWith, err := req.normalizeShareWith()
+	if err != nil {
+		fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	tracker.ID = c.Param("id")
 	updated, err := a.store.UpdateTracker(c.Request.Context(), userID(c), tracker)
 	if err != nil {
 		failStore(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, updated)
+	c.JSON(http.StatusOK, trackerResponse{
+		Tracker:     *updated,
+		Invitations: a.shareTracker(c, updated, shareWith),
+	})
 }
 
 func (a *API) deleteTracker(c *gin.Context) {
@@ -246,7 +333,7 @@ func (a *API) deleteEntry(c *gin.Context) {
 		fail(c, http.StatusBadRequest, "day must be a date in YYYY-MM-DD format")
 		return
 	}
-	if err := a.store.DeleteEntry(c.Request.Context(), tracker.ID, day); err != nil {
+	if err := a.store.DeleteEntry(c.Request.Context(), userID(c), tracker.ID, day); err != nil {
 		failStore(c, err)
 		return
 	}
@@ -272,7 +359,7 @@ func (a *API) trackerData(c *gin.Context) {
 		return
 	}
 
-	earliest, err := a.store.EarliestEntryDay(c.Request.Context(), userID(c), tracker.ID)
+	earliest, err := a.store.EarliestEntryDay(c.Request.Context(), tracker.ID)
 	if err != nil {
 		failStore(c, err)
 		return

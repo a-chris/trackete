@@ -2,10 +2,14 @@ import type {
   ChartData,
   Dashboard,
   Entry,
+  Invitation,
+  InvitationDetails,
+  InviteSuggestion,
   Meta,
   OverviewResponse,
   Tracker,
   TrackerInput,
+  TrackerSharing,
   User,
   Widget,
   WidgetInput,
@@ -98,6 +102,36 @@ export const api = {
   updateTracker: (id: string, input: TrackerInput) =>
     request<Tracker>(`/api/trackers/${id}`, { method: 'PUT', ...json(input) }),
   deleteTracker: (id: string) => request<{ ok: true }>(`/api/trackers/${id}`, { method: 'DELETE' }),
+
+  trackerSharing: (trackerId: string) =>
+    request<TrackerSharing>(`/api/trackers/${trackerId}/sharing`),
+  invite: (trackerId: string, email: string) =>
+    request<Invitation>(`/api/trackers/${trackerId}/invitations`, {
+      method: 'POST',
+      ...json({ email }),
+    }),
+  resendInvitation: (trackerId: string, invitationId: string) =>
+    request<Invitation>(`/api/trackers/${trackerId}/invitations/${invitationId}/resend`, {
+      method: 'POST',
+    }),
+  cancelInvitation: (trackerId: string, invitationId: string) =>
+    request<Invitation>(`/api/trackers/${trackerId}/invitations/${invitationId}`, {
+      method: 'DELETE',
+    }),
+  removeMember: (trackerId: string, memberId: string) =>
+    request<{ ok: true }>(`/api/trackers/${trackerId}/members/${memberId}`, { method: 'DELETE' }),
+  inviteSuggestions: () =>
+    request<{ suggestions: InviteSuggestion[] }>('/api/sharing/suggestions').then(
+      (r) => r.suggestions,
+    ),
+  invitation: (token: string) => request<InvitationDetails>(`/api/invitations/${token}`),
+  acceptInvitation: (token: string, details?: { name?: string; password?: string }) =>
+    request<{ user: User; tracker: { id: string; name: string } }>(
+      `/api/invitations/${token}/accept`,
+      { method: 'POST', ...json(details ?? {}) },
+    ),
+  rejectInvitation: (token: string) =>
+    request<{ ok: true }>(`/api/invitations/${token}/reject`, { method: 'POST' }),
 
   entries: (trackerId: string, from: string, to: string) =>
     request<{ entries: Entry[] }>(`/api/trackers/${trackerId}/entries${query({ from, to })}`).then(
