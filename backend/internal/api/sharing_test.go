@@ -477,6 +477,77 @@ func TestInvitationTokenValidation(t *testing.T) {
 
 // Resending a lapsed invitation extends its expiry, so the re-emailed link is
 // still usable.
+// Withdrawing an invitation removes the address from everything that says who
+// has access, keeps the row as history and stops the mailed link from working.
+func TestCancelInvitation(t *testing.T) {
+	c := newTestClient(t)
+	c.cookie = c.session(c.do("POST", "/api/auth/register",
+		`{"email":"owner@example.com","password":"supersecret","name":"Owner"}`))
+
+	var tracker struct {
+		ID string `json:"id"`
+	}
+	if rec := c.doJSON("POST", "/api/trackers", `{"name":"Run","kind":"boolean","shareWith":["friend@example.com"]}`, &tracker); rec.Code != http.StatusCreated {
+		t.Fatalf("create tracker: %d %s", rec.Code, rec.Body.String())
+	}
+
+	var sharing sharingPayload
+	if rec := c.doJSON("GET", "/api/trackers/"+tracker.ID+"/sharing", "", &sharing); rec.Code != http.StatusOK {
+		t.Fatalf("sharing overview: %d %s", rec.Code, rec.Body.String())
+	}
+	if len(sharing.Invitations) != 1 {
+		t.Fatalf("expected one invitation, got %+v", sharing.Invitations)
+	}
+	invite := sharing.Invitations[0]
+	token := c.invitationToken()
+
+	// A member has no say over who else may join.
+	stranger := &testClient{t: t, router: c.router}
+	stranger.cookie = stranger.session(stranger.do("POST", "/api/auth/register",
+		`{"email":"stranger@example.com","password":"supersecret","name":"Stranger"}`))
+	if rec := stranger.do("DELETE", "/api/trackers/"+tracker.ID+"/invitations/"+invite.ID, ""); rec.Code != http.StatusForbidden && rec.Code != http.StatusNotFound {
+		t.Fatalf("cancel by a stranger: expected 403 or 404, got %d %s", rec.Code, rec.Body.String())
+	}
+
+	var cancelled invitationPayload
+	if rec := c.doJSON("DELETE", "/api/trackers/"+tracker.ID+"/invitations/"+invite.ID, "", &cancelled); rec.Code != http.StatusOK {
+		t.Fatalf("cancel invitation: %d %s", rec.Code, rec.Body.String())
+	}
+	if cancelled.Status != model.InviteRemoved {
+		t.Fatalf("a cancelled invitation is retired, got %q", cancelled.Status)
+	}
+
+	// The row stays as history, so the owner can see the address was withdrawn.
+	var after sharingPayload
+	if rec := c.doJSON("GET", "/api/trackers/"+tracker.ID+"/sharing", "", &after); rec.Code != http.StatusOK {
+		t.Fatalf("sharing after cancel: %d %s", rec.Code, rec.Body.String())
+	}
+	if len(after.Invitations) != 1 || after.Invitations[0].Status != model.InviteRemoved {
+		t.Fatalf("expected the withdrawn invitation to remain as history, got %+v", after.Invitations)
+	}
+
+	// Nobody is shared with anymore, so the tracker list keeps quiet about it.
+	var listed struct {
+		Trackers []struct {
+			SharedWith []string `json:"sharedWith"`
+		} `json:"trackers"`
+	}
+	if rec := c.doJSON("GET", "/api/trackers", "", &listed); rec.Code != http.StatusOK {
+		t.Fatalf("list trackers: %d %s", rec.Code, rec.Body.String())
+	}
+	if len(listed.Trackers) != 1 || len(listed.Trackers[0].SharedWith) != 0 {
+		t.Fatalf("a withdrawn invitation must not survive on the list, got %+v", listed.Trackers)
+	}
+
+	// The link that was mailed is dead, and so is a second cancel.
+	if rec := c.do("GET", "/api/invitations/"+token, ""); rec.Code != http.StatusConflict {
+		t.Fatalf("withdrawn invitation link: expected 409, got %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := c.do("DELETE", "/api/trackers/"+tracker.ID+"/invitations/"+invite.ID, ""); rec.Code != http.StatusConflict {
+		t.Fatalf("cancelling twice: expected 409, got %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestResendRefreshesLapsedInvitation(t *testing.T) {
 	c := newTestClient(t)
 	c.cookie = c.session(c.do("POST", "/api/auth/register",

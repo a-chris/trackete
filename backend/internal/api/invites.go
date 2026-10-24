@@ -267,6 +267,25 @@ func (a *API) trackerSharing(c *gin.Context) {
 	})
 }
 
+// cancelInvitation withdraws an invitation the invitee never acted on, so the
+// address stops showing up as someone with access.
+func (a *API) cancelInvitation(c *gin.Context) {
+	tracker, ok := a.ownerTracker(c)
+	if !ok {
+		return
+	}
+	inv, err := a.store.CancelInvitation(c.Request.Context(), tracker.ID, c.Param("inviteId"))
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			fail(c, http.StatusConflict, "this invitation is no longer open")
+			return
+		}
+		failStore(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, inv)
+}
+
 func (a *API) removeMember(c *gin.Context) {
 	tracker, ok := a.ownerTracker(c)
 	if !ok {
