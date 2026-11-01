@@ -50,9 +50,7 @@ The signing secret is generated into `/data/.jwt-secret` on first start, so a
 container that owns its volume needs no configuration at all. Pass
 `-e JWT_SECRET=...` if you would rather manage it yourself.
 
-> A package is private the first time it is published. Make it public once
-> under the package's settings, otherwise pulls need credentials even though
-> the repository is public.
+> The image pulls anonymously: no registry login or token is needed.
 
 ### From source
 
