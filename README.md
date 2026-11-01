@@ -35,7 +35,9 @@ Open <http://localhost:8080> and create an account.
 
 ### Prebuilt image (one-liner)
 
-Release tags publish a multi-arch image to GHCR:
+Every commit on `main` publishes a multi-arch image to GHCR as
+`ghcr.io/a-chris/trackete:latest`. A `v*` tag publishes the tag name as-is, so
+the `v1.2.3` tag gives you `ghcr.io/a-chris/trackete:v1.2.3`.
 
 ```bash
 docker run -d --name trackete \
@@ -48,8 +50,9 @@ The signing secret is generated into `/data/.jwt-secret` on first start, so a
 container that owns its volume needs no configuration at all. Pass
 `-e JWT_SECRET=...` if you would rather manage it yourself.
 
-> Until a `v*` tag has been pushed, use the Compose or source build below; the
-> release workflow (`.github/workflows/release.yml`) creates the image.
+> A package is private the first time it is published. Make it public once
+> under the package's settings, otherwise pulls need credentials even though
+> the repository is public.
 
 ### From source
 
