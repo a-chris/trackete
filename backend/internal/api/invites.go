@@ -312,6 +312,36 @@ func (a *API) inviteSuggestions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"suggestions": suggestions})
 }
 
+// pendingInvitation is an open invitation together with the signed link it was
+// mailed with, so the invitee can act on it from inside the app.
+type pendingInvitation struct {
+	model.Invitation
+	Token string `json:"token"`
+}
+
+// myInvitations lists the open invitations addressed to the signed-in user. The
+// token is the same one the email carries, so accepting from here goes through
+// the public accept path instead of a second implementation of it.
+func (a *API) myInvitations(c *gin.Context) {
+	ctx := c.Request.Context()
+	user, err := a.store.UserByID(ctx, userID(c))
+	if err != nil {
+		failStore(c, err)
+		return
+	}
+	open, err := a.store.OpenInvitationsForEmail(ctx, user.Email)
+	if err != nil {
+		failStore(c, err)
+		return
+	}
+
+	out := make([]pendingInvitation, 0, len(open))
+	for i := range open {
+		out = append(out, pendingInvitation{Invitation: open[i], Token: a.inviteToken(&open[i])})
+	}
+	c.JSON(http.StatusOK, gin.H{"invitations": out})
+}
+
 // invitationDetails is what the acceptance page needs: enough to name the
 // tracker and decide between "sign in and join" and "create your account".
 type invitationDetails struct {

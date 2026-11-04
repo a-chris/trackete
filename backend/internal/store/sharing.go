@@ -262,6 +262,38 @@ func (s *Store) ListInvitations(ctx context.Context, trackerID string) ([]model.
 	return out, rows.Err()
 }
 
+// OpenInvitationsForEmail returns the invitations addressed to email that are
+// still waiting for an answer, newest first. Accepting, rejecting or removing an
+// invitation, and the link expiring, all take it out of this list.
+//
+// Expiry is compared in Go rather than SQL: expires_at is stored as
+// variable-precision RFC3339 text, where "...T10:00:00Z" sorts after
+// "...T10:00:00.5Z" even though the second timestamp is earlier.
+func (s *Store) OpenInvitationsForEmail(ctx context.Context, email string) ([]model.Invitation, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT `+invitationColumns+` `+invitationJoins+`
+		 WHERE i.email = ? AND i.status IN (?, ?) ORDER BY i.created_at DESC`,
+		normalizeEmail(email), model.InvitePending, model.InviteDelivered,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cutoff := now()
+	out := make([]model.Invitation, 0, 4)
+	for rows.Next() {
+		inv, err := scanInvitation(rows)
+		if err != nil {
+			return nil, err
+		}
+		if inv.ExpiresAt.After(cutoff) {
+			out = append(out, *inv)
+		}
+	}
+	return out, rows.Err()
+}
+
 // SharedWithEmails returns, for each tracker ID, the addresses the tracker is
 // shared with: accepted members other than the owner, plus invitations that are
 // still open. Trackers shared with nobody are absent from the map.

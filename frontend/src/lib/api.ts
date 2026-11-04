@@ -5,6 +5,7 @@ import type {
   Invitation,
   InvitationDetails,
   InviteSuggestion,
+  PendingInvitation,
   Meta,
   OverviewResponse,
   Tracker,
@@ -120,6 +121,10 @@ export const api = {
     }),
   removeMember: (trackerId: string, memberId: string) =>
     request<{ ok: true }>(`/api/trackers/${trackerId}/members/${memberId}`, { method: 'DELETE' }),
+  pendingInvitations: () =>
+    request<{ invitations: PendingInvitation[] }>('/api/sharing/invitations').then(
+      (r) => r.invitations,
+    ),
   inviteSuggestions: () =>
     request<{ suggestions: InviteSuggestion[] }>('/api/sharing/suggestions').then(
       (r) => r.suggestions,

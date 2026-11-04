@@ -338,3 +338,56 @@ func TestRefreshInvitationExpiry(t *testing.T) {
 		t.Fatalf("settled invitation refresh: expected ErrNotFound, got %v", err)
 	}
 }
+
+// The invitee's list only shows invitations that can still be acted on, so a
+// lapsed one must drop out instead of leading to a dead link.
+func TestOpenInvitationsForEmail(t *testing.T) {
+	st, err := Open(filepath.Join(t.TempDir(), "inbox.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+
+	ctx := t.Context()
+	owner, err := st.CreateUser(ctx, "owner@example.com", "Owner", "x")
+	if err != nil {
+		t.Fatalf("create owner: %v", err)
+	}
+	tracker, err := st.CreateTracker(ctx, owner.ID, &model.Tracker{Name: "Shared", Kind: model.KindNumeric})
+	if err != nil {
+		t.Fatalf("create tracker: %v", err)
+	}
+	inv, _, err := st.CreateInvitation(ctx, owner.ID, tracker.ID, "Friend@Example.com")
+	if err != nil {
+		t.Fatalf("create invitation: %v", err)
+	}
+
+	open, err := st.OpenInvitationsForEmail(ctx, "friend@example.com")
+	if err != nil {
+		t.Fatalf("list open invitations: %v", err)
+	}
+	if len(open) != 1 || open[0].ID != inv.ID || open[0].TrackerName != "Shared" || open[0].InviterName != "Owner" {
+		t.Fatalf("unexpected open invitations: %+v", open)
+	}
+
+	// A settled invitation is history, not an inbox entry.
+	if err := st.SetInvitationStatus(ctx, inv.ID, model.InviteAccepted); err != nil {
+		t.Fatalf("mark accepted: %v", err)
+	}
+	if open, err := st.OpenInvitationsForEmail(ctx, "friend@example.com"); err != nil || len(open) != 0 {
+		t.Fatalf("accepted invitation listed: %+v %v", open, err)
+	}
+
+	// Re-inviting reopens a live row, and a lapsed one drops out of the list.
+	inv, created, err := st.CreateInvitation(ctx, owner.ID, tracker.ID, "friend@example.com")
+	if err != nil || !created {
+		t.Fatalf("re-invite: created=%v err=%v", created, err)
+	}
+	if _, err := st.db.ExecContext(ctx, `UPDATE invitations SET expires_at = ? WHERE id = ?`,
+		formatTime(now().Add(-time.Hour)), inv.ID); err != nil {
+		t.Fatalf("expire invitation: %v", err)
+	}
+	if open, err := st.OpenInvitationsForEmail(ctx, "friend@example.com"); err != nil || len(open) != 0 {
+		t.Fatalf("expired invitation listed: %+v %v", open, err)
+	}
+}

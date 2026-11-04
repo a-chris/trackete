@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, ListChecks, LogOut, Moon, Settings, Sun } from 'lucide-react'
+import { Inbox, LayoutDashboard, ListChecks, LogOut, Moon, Settings, Sun } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { useMe } from '../lib/queries'
+import { useMe, usePendingInvitations } from '../lib/queries'
 import { useTheme } from '../lib/theme'
 import { Logo } from './Logo'
 
@@ -10,11 +10,14 @@ const navItems = [
   { to: '/', label: 'Today', icon: Sun, end: true },
   { to: '/dashboard', label: 'Board', icon: LayoutDashboard, end: false },
   { to: '/trackers', label: 'Trackers', icon: ListChecks, end: false },
+  { to: '/invitations', label: 'Invites', icon: Inbox, end: false },
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ]
 
 export function AppShell() {
   const { data: user } = useMe()
+  const { data: pendingInvitations = [] } = usePendingInvitations()
+  const waiting = pendingInvitations.length
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { mode, setMode } = useTheme()
@@ -32,7 +35,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-base-100">
-      {/* A rail, not a sidebar: the app is four places wide. */}
+      {/* A rail, not a sidebar: the app is five places wide. */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[76px] flex-col border-r border-base-300 lg:flex">
         <div className="flex h-20 items-center justify-center">
           <NavLink to="/" aria-label="Trackete home" className="rounded-sm">
@@ -65,8 +68,19 @@ export function AppShell() {
                       isActive ? 'opacity-100' : 'opacity-0'
                     }`}
                   />
-                  <Icon className="size-[18px]" strokeWidth={isActive ? 2.2 : 1.7} />
+                  <span className="relative">
+                    <Icon className="size-[18px]" strokeWidth={isActive ? 2.2 : 1.7} />
+                    {to === '/invitations' && waiting > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -right-1 -top-0.5 size-1.5 rounded-full bg-primary"
+                      />
+                    )}
+                  </span>
                   {label}
+                  {to === '/invitations' && waiting > 0 && (
+                    <span className="sr-only">{waiting} waiting</span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -132,8 +146,19 @@ export function AppShell() {
           >
             {({ isActive }) => (
               <>
-                <Icon className="size-5" strokeWidth={isActive ? 2.2 : 1.7} />
+                <span className="relative">
+                  <Icon className="size-5" strokeWidth={isActive ? 2.2 : 1.7} />
+                  {to === '/invitations' && waiting > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-0.5 size-1.5 rounded-full bg-primary"
+                    />
+                  )}
+                </span>
                 {label}
+                {to === '/invitations' && waiting > 0 && (
+                  <span className="sr-only">{waiting} waiting</span>
+                )}
               </>
             )}
           </NavLink>
