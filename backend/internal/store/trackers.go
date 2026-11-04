@@ -32,12 +32,13 @@ func decodeGoal(raw sql.NullString) *model.Goal {
 }
 
 func (s *Store) ListTrackers(ctx context.Context, userID string, includeArchived bool) ([]model.Tracker, error) {
-	query := `SELECT id, name, description, icon, color, kind, unit, goal, archived, created_at, updated_at
-		FROM trackers WHERE user_id = ?`
+	query := `SELECT ` + trackerColumns + `
+		FROM trackers t JOIN tracker_members m ON m.tracker_id = t.id
+		WHERE m.user_id = ?`
 	if !includeArchived {
-		query += ` AND archived = 0`
+		query += ` AND t.archived = 0`
 	}
-	query += ` ORDER BY archived ASC, created_at ASC`
+	query += ` ORDER BY t.archived ASC, t.created_at ASC`
 
 	rows, err := s.db.QueryContext(ctx, query, userID)
 	if err != nil {
@@ -65,7 +66,7 @@ func scanTracker(scanner interface{ Scan(...any) error }) (*model.Tracker, error
 	)
 	if err := scanner.Scan(
 		&t.ID, &t.Name, &t.Description, &t.Icon, &t.Color, &t.Kind, &t.Unit,
-		&goal, &archived, &createdAt, &updatedAt,
+		&goal, &archived, &t.Role, &createdAt, &updatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -76,10 +77,14 @@ func scanTracker(scanner interface{ Scan(...any) error }) (*model.Tracker, error
 	return &t, nil
 }
 
+// GetTracker returns a tracker the user is an accepted member of. Non-members
+// get ErrNotFound, so an unshared tracker is indistinguishable from a missing
+// one.
 func (s *Store) GetTracker(ctx context.Context, userID, id string) (*model.Tracker, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, name, description, icon, color, kind, unit, goal, archived, created_at, updated_at
-		 FROM trackers WHERE id = ? AND user_id = ?`, id, userID,
+		`SELECT `+trackerColumns+`
+		 FROM trackers t JOIN tracker_members m ON m.tracker_id = t.id
+		 WHERE t.id = ? AND m.user_id = ?`, id, userID,
 	)
 	t, err := scanTracker(row)
 	if err != nil {
@@ -94,12 +99,30 @@ func (s *Store) GetTracker(ctx context.Context, userID, id string) (*model.Track
 func (s *Store) CreateTracker(ctx context.Context, userID string, t *model.Tracker) (*model.Tracker, error) {
 	ts := formatTime(now())
 	t.ID = newID()
-	_, err := s.db.ExecContext(ctx,
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO trackers (id, user_id, name, description, icon, color, kind, unit, goal, archived, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
 		t.ID, userID, t.Name, t.Description, t.Icon, t.Color, t.Kind, t.Unit, encodeGoal(t.Goal), ts, ts,
-	)
-	if err != nil {
+	); err != nil {
+		return nil, err
+	}
+
+	// The creator is the owner and starts as an accepted member, which is what
+	// every read path checks.
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO tracker_members (tracker_id, user_id, role, created_at) VALUES (?, ?, ?, ?)`,
+		t.ID, userID, model.RoleOwner, ts,
+	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return s.GetTracker(ctx, userID, t.ID)
@@ -135,3 +158,8 @@ func boolToInt(v bool) int {
 	}
 	return 0
 }
+
+// trackerColumns is every column scanTracker reads. The membership role comes
+// from the join, so callers always learn how they may act on the tracker.
+const trackerColumns = `t.id, t.name, t.description, t.icon, t.color, t.kind, t.unit,
+	t.goal, t.archived, m.role, t.created_at, t.updated_at`

@@ -44,6 +44,16 @@ func main() {
 
 	go func() {
 		log.Printf("trackete %s listening on %s (database: %s)", cfg.Version, server.Addr, cfg.DBPath)
+		// Say where invitation mail goes: without an SMTP server the links land
+		// in a file, and that file is the only way to find them.
+		switch cfg.MailTransport {
+		case "smtp":
+			log.Printf("invitation mail: smtp via %s:%s (from %s)", cfg.SMTPHost, cfg.SMTPPort, cfg.MailFrom)
+		case "file":
+			log.Printf("invitation mail: file outbox at %s", cfg.MailFile)
+		default:
+			log.Printf("invitation mail: log transport (set SMTP_HOST to deliver by email)")
+		}
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("http server: %v", err)
 		}

@@ -15,12 +15,24 @@ import (
 )
 
 type testClient struct {
-	t      *testing.T
-	router http.Handler
-	cookie *http.Cookie
+	t        *testing.T
+	router   http.Handler
+	cookie   *http.Cookie
+	st       *store.Store
+	mailPath string
 }
 
 func newTestClient(t *testing.T) *testClient {
+	t.Helper()
+	return newTestClientWithConfig(t, config.Config{
+		AllowRegistration: true,
+		Version:           "test",
+	})
+}
+
+// newTestClientWithConfig wires the router like production does: a real store in
+// a temp dir and invitation mail written to a temp outbox the tests can read.
+func newTestClientWithConfig(t *testing.T, cfg config.Config) *testClient {
 	t.Helper()
 	st, err := store.Open(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -28,14 +40,21 @@ func newTestClient(t *testing.T) *testClient {
 	}
 	t.Cleanup(func() { st.Close() })
 
-	router := NewRouter(config.Config{
-		JWTSecret:         "test-secret",
-		TokenTTL:          time.Hour,
-		AllowRegistration: true,
-		Version:           "test",
-	}, st)
+	if cfg.JWTSecret == "" {
+		cfg.JWTSecret = "test-secret"
+	}
+	if cfg.TokenTTL == 0 {
+		cfg.TokenTTL = time.Hour
+	}
+	if cfg.AppURL == "" {
+		cfg.AppURL = "http://trackete.test"
+	}
+	mailPath := filepath.Join(t.TempDir(), "outbox.log")
+	cfg.MailTransport = "file"
+	cfg.MailFile = mailPath
 
-	return &testClient{t: t, router: router}
+	router := NewRouter(cfg, st)
+	return &testClient{t: t, router: router, st: st, mailPath: mailPath}
 }
 
 func (c *testClient) do(method, path, body string) *httptest.ResponseRecorder {

@@ -307,7 +307,7 @@ func (a *API) dashboardData(c *gin.Context) {
 		}
 
 		chartFrom := analytics.RangeStart(to, widget.Config.Range)
-		earliest, err := a.store.EarliestEntryDay(c.Request.Context(), uid, tracker.ID)
+		earliest, err := a.store.EarliestEntryDay(c.Request.Context(), tracker.ID)
 		if err != nil {
 			failStore(c, err)
 			return
