@@ -1,18 +1,53 @@
 version: 2
+
+# Security updates only: Dependabot should open a pull request when a dependency
+# has a known vulnerability, not when a newer version happens to exist.
+#
+# Two separate mechanisms are involved, and only one of them lives in this file:
+#
+#   * Version updates are configured here. `open-pull-requests-limit: 0` is the
+#     documented way to switch them off for a package manager while keeping the
+#     entry valid. It only affects version updates; security pull requests have
+#     their own fixed limit of ten and ignore this option.
+#   * Security updates are configured in the repository, not here: Settings >
+#     Code security > Dependabot alerts and Dependabot security updates. Both are
+#     enabled for this repository. With alerts off, `open-pull-requests-limit: 0`
+#     would mean no pull requests at all, so keep that in mind if they get turned
+#     back off.
+#
+# To restore routine version bumps for one ecosystem, delete its
+# `open-pull-requests-limit: 0` line (or raise the number). Nothing else changes.
 updates:
   - package-ecosystem: gomod
     directory: /backend
     schedule:
       interval: weekly
+    # Security updates only: no routine Go module bumps.
+    open-pull-requests-limit: 0
+
   - package-ecosystem: bun
     directory: /frontend
     schedule:
       interval: weekly
+    # Security updates only: no routine frontend bumps.
+    open-pull-requests-limit: 0
+
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    # Security updates only. Docker images are the one ecosystem GitHub alerts do
+    # not cover: Docker is absent from the dependency graph, so a base image can
+    # never produce a security pull request and this entry currently produces
+    # nothing. If base image CVEs should be picked up automatically, delete the
+    # line below to bring back weekly alpine/node bumps, which is the only
+    # automated path available for them.
+    open-pull-requests-limit: 0
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    # Security updates only. Action alerts are generated for actions pinned to a
+    # semantic version, as they are here; SHA-pinned actions would not alert.
+    open-pull-requests-limit: 0
