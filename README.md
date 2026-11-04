@@ -1,43 +1,30 @@
 # Trackete
 
-**Track anything. Build the dashboard you actually want.**
-
-Trackete is a self-hosted generalist tracker. Create a yes/no habit or a number
-with a unit — beers, weight, meditation, pages read — log it in seconds, then
-arrange charts on a dashboard that is yours. One container, one SQLite file, no
-external services.
+Self-hosted tracker for yes/no habits and for numbers with a unit: beers,
+weight, meditation, pages read. Log a value in seconds, then arrange charts on a
+dashboard you lay out yourself. One container, one SQLite file, no external
+services.
 
 ![Trackete dashboard in dark mode](docs/screenshots/dashboard-dark.png)
 
-## What you get
+## Features
 
-- **Yes/No and Number trackers**, each with an optional goal (`at least` / `at
+- Yes/No and Number trackers, each with an optional goal (`at least` / `at
   most`, per day, week or month).
-- **One value per day**, quick steppers, and a detail view for editing history.
-- **Six chart types** — line, bar, area, donut, calendar heatmap, stat card.
-- **Drag-and-resize dashboards**, multiple dashboards, live statistics
-  (streaks, completion, strongest weekday, on-target periods).
-- **Multi-user accounts** with per-user data isolation, light/dark themes.
+- One value per day, quick steppers, and a detail view for editing history.
+- Six chart types: line, bar, area, donut, calendar heatmap, stat card.
+- Drag-and-resize dashboards, multiple dashboards, live statistics (streaks,
+  completion, strongest weekday, on-target periods).
+- Multi-user accounts with per-user data isolation, light and dark themes.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data model, chart
 semantics and API.
 
-## Quick start (Docker Compose)
-
-```bash
-git clone https://github.com/a-chris/trackete.git
-cd trackete
-cp .env.example .env          # optional: edit it to pin JWT_SECRET, ports, etc.
-docker compose up -d --build
-```
-
-Open <http://localhost:8080> and create an account.
-
-### Prebuilt image (one-liner)
+## Quick start
 
 Every commit on `main` publishes a multi-arch image to GHCR as
-`ghcr.io/a-chris/trackete:latest`. A `v*` tag publishes the tag name as-is, so
-the `v1.2.3` tag gives you `ghcr.io/a-chris/trackete:v1.2.3`.
+`ghcr.io/a-chris/trackete:latest`, and a `v*` tag publishes that tag name:
+`v1.2.3` gives `ghcr.io/a-chris/trackete:v1.2.3`.
 
 ```bash
 docker run -d --name trackete \
@@ -46,16 +33,30 @@ docker run -d --name trackete \
   ghcr.io/a-chris/trackete:latest
 ```
 
-The signing secret is generated into `/data/.jwt-secret` on first start, so a
-container that owns its volume needs no configuration at all. Pass
-`-e JWT_SECRET=...` if you would rather manage it yourself.
+Open <http://localhost:8080> and create an account.
 
-> The image pulls anonymously: no registry login or token is needed.
+The session secret is generated into `/data/.jwt-secret` on first start, so
+nothing else is needed. Pass `-e JWT_SECRET=...` to manage the secret yourself,
+and `-e ALLOW_REGISTRATION=false` once the accounts exist.
+
+### Docker Compose
+
+Use this to run a modified tree, or to keep the configuration in a file.
+
+```bash
+git clone https://github.com/a-chris/trackete.git
+cd trackete
+cp .env.example .env          # optional, see Configuration
+docker compose up -d --build
+```
+
+Compose pins the volume name to `trackete-data`, the same volume the `docker run`
+command above uses, so the two can be swapped without moving data.
 
 ### From source
 
-Requirements: Go 1.27+ and Bun 1.4+. [mise](https://mise.jdx.dev) reads
-`.mise.toml` and installs both.
+Requires Go 1.27+ and Bun 1.4+. [mise](https://mise.jdx.dev) reads `.mise.toml`
+and installs both.
 
 ```bash
 mise install
@@ -64,26 +65,41 @@ make build                    # frontend/dist + backend/trackete
 STATIC_DIR=./frontend/dist DB_PATH=./data/trackete.db ./backend/trackete
 ```
 
-## Critical configuration
+## Configuration
 
-| Variable | Why it matters |
-| --- | --- |
-| `JWT_SECRET` | Signs session cookies. Optional: if unset, a secret is generated on first run and stored in `.jwt-secret` next to the database (inside the volume), so sessions survive restarts. Set it explicitly to pin the value, or to rotate (set a new one and delete the file). If the secret cannot be stored, startup fails instead of quietly signing everyone out on the next restart. Use `openssl rand -hex 32`. |
-| `JWT_SECRET_FILE` | Only used when `JWT_SECRET` is empty: path of the file that holds the generated secret. Defaults to `.jwt-secret` in the database directory. |
-| `TRUSTED_PROXIES` | **Set this when behind a reverse proxy** (comma-separated IPs/CIDRs). Empty means no proxy is trusted: the forwarded client IP is ignored (so per-IP login throttling keys on the proxy) and `X-Forwarded-Proto` only marks cookies `Secure` when it comes from a trusted proxy. |
-| `ALLOW_REGISTRATION` | Defaults to `true`. Set `false` once your accounts exist. |
-| `TOKEN_TTL` | Session lifetime, default `720h` (30 days). |
-| `DB_PATH` / volume | Everything lives in the SQLite file (Docker: `/data/trackete.db`). Mount a persistent volume. When overriding `DB_PATH`, keep it under `/data`, or the database lands outside the volume and is lost on restart. |
-| `PORT` | HTTP port, default `8080`. |
-| `STATIC_DIR` | Built SPA directory. Empty = API only (Docker sets `/app/dist`). |
-| `CORS_ORIGINS` | Comma-separated extra origins for credentialed requests. Only for cross-origin development; wildcards are ignored. |
+The defaults work without an `.env`. `ALLOW_REGISTRATION` is the one setting to
+change once your accounts exist.
 
-## Running behind HTTPS
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `ALLOW_REGISTRATION` | `true` | Set to `false` after the accounts exist. |
+| `JWT_SECRET` | generated | Signs session cookies. When unset, a secret is generated on first run into `.jwt-secret` next to the database, inside the volume, so sessions survive restarts. Set it to pin the value or to rotate (set a new one, delete the file). If the secret cannot be stored, startup fails instead of signing everyone out at the next restart. Use `openssl rand -hex 32`. |
+| `TOKEN_TTL` | `720h` | Session lifetime (30 days). |
+| `DB_PATH` | `/data/trackete.db` | The SQLite file. Keep overrides under `/data`, otherwise the database lands outside the volume. |
+| `PORT` | `8080` | HTTP port. In Compose this sets the published host port; the container always listens on 8080. |
 
-Terminate TLS at your reverse proxy, forward `X-Forwarded-Proto: https`, and list
-the proxy in `TRUSTED_PROXIES`. Cookies then become `Secure` automatically.
+### Optional
 
-Caddy example:
+- `TRUSTED_PROXIES`: hops allowed to report the client address and scheme.
+  Defaults to loopback plus the private ranges (`127.0.0.0/8`, `::1`,
+  `fc00::/7`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`,
+  `169.254.0.0/16`, `fe80::/10`), the same list Rails ships. Docker's bridge
+  gateway and a proxy on the same host are inside those ranges, so a
+  reverse-proxy deployment sets nothing. Override with a comma-separated list of
+  IPs or CIDRs to narrow it, or `none` to trust no proxy, which makes per-IP
+  login throttling key on the proxy address.
+- `JWT_SECRET_FILE`: file holding the generated secret, used only when
+  `JWT_SECRET` is empty. Defaults to `.jwt-secret` in the database directory.
+- `STATIC_DIR`: built SPA directory. Empty serves the API only; the image sets
+  `/app/dist`.
+- `CORS_ORIGINS`: extra origins allowed to make credentialed requests. For
+  cross-origin development only, and wildcards are ignored.
+
+## Behind HTTPS
+
+Terminate TLS at the proxy and forward `X-Forwarded-Proto: https`. Cookies are
+marked `Secure` because the proxy is inside the default `TRUSTED_PROXIES`
+ranges.
 
 ```
 trackete.example.com {
@@ -91,14 +107,14 @@ trackete.example.com {
 }
 ```
 
-With Compose, bind the port to loopback only: `ports: ["127.0.0.1:8080:8080"]`
-and put the proxy in front. Set `TRUSTED_PROXIES=127.0.0.1/32` (or the proxy's
-Docker network) so forwarded headers are honored.
+Publish the port on loopback only, so the container is reachable through the
+proxy and nowhere else: `-p 127.0.0.1:8080:8080` for `docker run`, or
+`ports: ["127.0.0.1:8080:8080"]` in Compose.
 
-SQLite runs in WAL mode: to back up, archive the whole volume while the container
-is stopped (or use `sqlite3 .backup`). Compose pins the volume name to
-`trackete-data` (see `docker-compose.yml`), so these commands target exactly the
-volume the container uses, whether it was created by Compose or by `docker run`.
+## Backup
+
+SQLite runs in WAL mode. Archive the volume with the container stopped, or use
+`sqlite3 .backup`.
 
 ```bash
 docker compose stop trackete
@@ -110,27 +126,26 @@ docker compose start trackete
 ## Development
 
 ```bash
-make dev        # API with live reload (Air) on :8080 + Vite on :5173
-make test       # Go vet/tests, TypeScript, ESLint, production build
+make dev        # API with live reload (Air) on :8080, Vite on :5173
+make test       # Go vet and tests, TypeScript, ESLint, build, UI class check
 ```
 
-`make dev` runs the API and the Vite dev server side by side; Vite proxies
-`/api` to the API, so cookies stay same-origin. Editing a Go file (or an
-embedded SQL migration) rebuilds and restarts the API — the first run installs
-a pinned Air into `backend/.bin/`. The dev database lives in `data/`
-(`DB_PATH`, gitignored).
+`make dev` runs the API and Vite side by side. Vite proxies `/api` to the API,
+so cookies stay same-origin. Editing a Go file, or an embedded SQL migration,
+rebuilds and restarts the API; the first run installs a pinned Air into
+`backend/.bin/`. The dev database lives in `data/` (`DB_PATH`, gitignored).
 
 Layout: `backend/` (Go API, SQLite store, embedded migrations, analytics) and
 `frontend/` (React, DaisyUI themes, ApexCharts, dashboard grid).
 
 ## Notes
 
-- Trackete logs one value per tracker per day; multiple entries per day and
-  entry variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
-- Charts render at most ten years of history; stored rows are never deleted.
-- Registration can be closed; duplicate-email responses reveal that an account
-  exists (intentional for a self-hosted install — close registration after
-  setup).
+- One value per tracker per day. Multiple entries per day and entry
+  variants/tags are on the [roadmap](docs/ARCHITECTURE.md#roadmap).
+- Charts render at most ten years of history. Stored rows are never deleted.
+- Registration can be closed. Duplicate-email responses reveal that an account
+  exists, which is intentional for a self-hosted install; close registration
+  after setup.
 
-Security policy: [SECURITY.md](SECURITY.md). Contributions:
+Security: [SECURITY.md](SECURITY.md). Contributing:
 [CONTRIBUTING.md](CONTRIBUTING.md). License: [MIT](LICENSE).
