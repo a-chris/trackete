@@ -36,9 +36,10 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 	}
 
 	r := gin.New()
-	// Trust no proxy by default: otherwise any client can spoof
-	// X-Forwarded-For and slip past the per-IP auth rate limiter. Behind a
-	// reverse proxy the operator lists its addresses in TRUSTED_PROXIES.
+	// Forwarded headers are believed only from trusted hops. config.Load fills
+	// TrustedProxies with the private ranges by default, which covers a Docker
+	// bridge gateway or a proxy on the same host; an empty list trusts nobody,
+	// so no client can spoof X-Forwarded-For past the per-IP rate limiter.
 	if len(cfg.TrustedProxies) == 0 {
 		if err := r.SetTrustedProxies(nil); err != nil {
 			log.Printf("WARN: could not disable trusted proxies: %v", err)

@@ -59,19 +59,11 @@ func Load() (Config, error) {
 		}
 	}
 
-	if raw := env("TRUSTED_PROXIES", ""); raw != "" {
-		for _, proxy := range strings.Split(raw, ",") {
-			if proxy = strings.TrimSpace(proxy); proxy == "" {
-				continue
-			}
-			if _, _, err := net.ParseCIDR(proxy); err != nil {
-				if net.ParseIP(proxy) == nil {
-					log.Printf("WARN: invalid TRUSTED_PROXIES entry %q, ignoring it (use an IP or CIDR)", proxy)
-					continue
-				}
-			}
-			c.TrustedProxies = append(c.TrustedProxies, proxy)
-		}
+	c.TrustedProxies = parseTrustedProxies(os.Getenv("TRUSTED_PROXIES"))
+	if len(c.TrustedProxies) == 0 {
+		log.Print("trusted proxies: none, so forwarded client IPs are ignored")
+	} else {
+		log.Printf("trusted proxies: %s", strings.Join(c.TrustedProxies, ", "))
 	}
 
 	if c.JWTSecret == "" {
@@ -83,6 +75,55 @@ func Load() (Config, error) {
 	}
 
 	return c, nil
+}
+
+// defaultTrustedProxies mirrors ActionDispatch::RemoteIp::TRUSTED_PROXIES in
+// Rails: private addresses are hops, not clients. A self-hosted instance always
+// sits behind one of them (Docker's bridge gateway, a Caddy on the same host),
+// so forwarded headers work without configuration.
+//
+// Trusting these ranges means a client that can already reach the app from a
+// private address could spoof X-Forwarded-For. That is the same trade every
+// Rails deployment makes; list the proxy explicitly in TRUSTED_PROXIES to
+// narrow it, or set it to "none" to trust nothing at all.
+var defaultTrustedProxies = []string{
+	"127.0.0.0/8",    // loopback IPv4
+	"::1",            // loopback IPv6
+	"fc00::/7",       // private IPv6
+	"10.0.0.0/8",     // private IPv4
+	"172.16.0.0/12",  // private IPv4
+	"192.168.0.0/16", // private IPv4
+	"169.254.0.0/16", // link-local IPv4
+	"fe80::/10",      // link-local IPv6
+}
+
+// parseTrustedProxies resolves the TRUSTED_PROXIES value. Empty (unset, or set
+// to an empty value by an env file) means the private-range defaults; "none"
+// means trust no proxy, which leaves every client identified by its socket
+// address.
+func parseTrustedProxies(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return append([]string(nil), defaultTrustedProxies...)
+	}
+	if strings.EqualFold(raw, "none") {
+		return nil
+	}
+
+	proxies := make([]string, 0, len(defaultTrustedProxies))
+	for _, proxy := range strings.Split(raw, ",") {
+		if proxy = strings.TrimSpace(proxy); proxy == "" {
+			continue
+		}
+		if _, _, err := net.ParseCIDR(proxy); err != nil {
+			if net.ParseIP(proxy) == nil {
+				log.Printf("WARN: invalid TRUSTED_PROXIES entry %q, ignoring it (use an IP or CIDR)", proxy)
+				continue
+			}
+		}
+		proxies = append(proxies, proxy)
+	}
+	return proxies
 }
 
 func env(key, fallback string) string {
