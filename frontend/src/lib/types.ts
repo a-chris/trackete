@@ -75,10 +75,16 @@ export interface Invitation {
   id: string
   trackerId: string
   trackerName?: string
+  inviterName?: string
   email: string
   status: InvitationStatus
   createdAt: string
   expiresAt: string
+}
+
+/** An open invitation addressed to the signed-in user, with its signed link. */
+export interface PendingInvitation extends Invitation {
+  token: string
 }
 
 export interface TrackerSharing {

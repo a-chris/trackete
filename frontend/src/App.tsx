@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell'
 import { RequireAuth } from './components/RequireAuth'
 import { FullPageSpinner } from './components/ui/Spinner'
 import { LoginPage, RegisterPage } from './pages/AuthPages'
+import { InvitationsPage } from './pages/InvitationsPage'
 import { InvitePage } from './pages/InvitePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
@@ -33,6 +34,7 @@ export function App() {
             <Route path="dashboard/:dashboardId" element={<DashboardPage />} />
             <Route path="trackers" element={<TrackersPage />} />
             <Route path="trackers/:trackerId" element={<TrackerDetailPage />} />
+            <Route path="invitations" element={<InvitationsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

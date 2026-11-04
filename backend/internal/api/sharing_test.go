@@ -595,3 +595,100 @@ func TestResendRefreshesLapsedInvitation(t *testing.T) {
 		t.Fatalf("re-emailed link should be usable: %d", rec.Code)
 	}
 }
+
+type pendingInboxPayload struct {
+	Invitations []struct {
+		ID          string    `json:"id"`
+		TrackerID   string    `json:"trackerId"`
+		TrackerName string    `json:"trackerName"`
+		InviterName string    `json:"inviterName"`
+		Email       string    `json:"email"`
+		Status      string    `json:"status"`
+		ExpiresAt   time.Time `json:"expiresAt"`
+		Token       string    `json:"token"`
+	} `json:"invitations"`
+}
+
+// pendingInbox reads GET /api/sharing/invitations for whoever the client is.
+func (c *testClient) pendingInbox() pendingInboxPayload {
+	c.t.Helper()
+	var box pendingInboxPayload
+	if rec := c.doJSON("GET", "/api/sharing/invitations", "", &box); rec.Code != http.StatusOK {
+		c.t.Fatalf("invitation inbox: %d %s", rec.Code, rec.Body.String())
+	}
+	return box
+}
+
+// An invitation otherwise only exists as an email, so the invitee's own list is
+// how somebody who closed the mail finds it again. The list hands out the same
+// signed link the mail carries, which keeps a single accept path in the app.
+func TestInvitationInboxListsWhatIsAddressedToYou(t *testing.T) {
+	c := newTestClient(t)
+	c.cookie = c.session(c.do("POST", "/api/auth/register",
+		`{"email":"owner-inbox@example.com","password":"supersecret","name":"Owner"}`))
+
+	var tracker struct {
+		ID string `json:"id"`
+	}
+	if rec := c.doJSON("POST", "/api/trackers",
+		`{"name":"Walks","kind":"numeric","unit":"km","shareWith":["walker@example.com"]}`,
+		&tracker); rec.Code != http.StatusCreated {
+		t.Fatalf("create tracker: %d %s", rec.Code, rec.Body.String())
+	}
+
+	friend := &testClient{t: t, router: c.router}
+	friend.cookie = friend.session(friend.do("POST", "/api/auth/register",
+		`{"email":"walker@example.com","password":"supersecret","name":"Walker"}`))
+
+	box := friend.pendingInbox()
+	if len(box.Invitations) != 1 {
+		t.Fatalf("expected one open invitation, got %+v", box.Invitations)
+	}
+	inv := box.Invitations[0]
+	if inv.TrackerName != "Walks" || inv.InviterName != "Owner" || inv.Email != "walker@example.com" {
+		t.Fatalf("unexpected invitation: %+v", inv)
+	}
+	if inv.Status != model.InviteDelivered || inv.Token == "" || !inv.ExpiresAt.After(time.Now()) {
+		t.Fatalf("invitation needs a live token and expiry: %+v", inv)
+	}
+
+	// The invitation is addressed to the friend, so the owner's list stays empty
+	// even though they created it.
+	if owner := c.pendingInbox(); len(owner.Invitations) != 0 {
+		t.Fatalf("owner inbox should be empty, got %+v", owner.Invitations)
+	}
+
+	// Accepting from the list is the mail path: the token joins the tracker and
+	// the invitation leaves the list.
+	if rec := friend.do("POST", "/api/invitations/"+inv.Token+"/accept", ""); rec.Code != http.StatusOK {
+		t.Fatalf("accept from the inbox: %d %s", rec.Code, rec.Body.String())
+	}
+	if box := friend.pendingInbox(); len(box.Invitations) != 0 {
+		t.Fatalf("accepted invitation must leave the list, got %+v", box.Invitations)
+	}
+
+	// Declining empties the list the same way.
+	decliner := &testClient{t: t, router: c.router}
+	decliner.cookie = decliner.session(decliner.do("POST", "/api/auth/register",
+		`{"email":"decliner@example.com","password":"supersecret","name":"Decliner"}`))
+	if rec := c.do("POST", "/api/trackers/"+tracker.ID+"/invitations",
+		`{"email":"decliner@example.com"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("invite the decliner: %d %s", rec.Code, rec.Body.String())
+	}
+	box = decliner.pendingInbox()
+	if len(box.Invitations) != 1 {
+		t.Fatalf("expected the decliner's invitation, got %+v", box.Invitations)
+	}
+	if rec := decliner.do("POST", "/api/invitations/"+box.Invitations[0].Token+"/reject", ""); rec.Code != http.StatusOK {
+		t.Fatalf("decline: %d %s", rec.Code, rec.Body.String())
+	}
+	if box := decliner.pendingInbox(); len(box.Invitations) != 0 {
+		t.Fatalf("declined invitation must leave the list, got %+v", box.Invitations)
+	}
+
+	// Signed out, the list is not a public endpoint.
+	anon := &testClient{t: t, router: c.router}
+	if rec := anon.do("GET", "/api/sharing/invitations", ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous inbox: expected 401, got %d", rec.Code)
+	}
+}

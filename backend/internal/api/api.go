@@ -103,6 +103,7 @@ func NewRouter(cfg config.Config, st *store.Store) *gin.Engine {
 		protected.DELETE("/trackers/:id/invitations/:inviteId", a.cancelInvitation)
 		protected.DELETE("/trackers/:id/members/:memberId", a.removeMember)
 		protected.GET("/sharing/suggestions", a.inviteSuggestions)
+		protected.GET("/sharing/invitations", a.myInvitations)
 
 		protected.GET("/dashboards", a.listDashboards)
 		protected.POST("/dashboards", a.createDashboard)

@@ -111,6 +111,16 @@ export function useTrackerSharing(trackerId: string | undefined) {
   })
 }
 
+// The invitee's side of sharing: what is waiting for an answer, used by the
+// Invitations page and the nav dot.
+export function usePendingInvitations() {
+  return useQuery({
+    queryKey: ['pending-invitations'],
+    queryFn: api.pendingInvitations,
+    staleTime: 60_000,
+  })
+}
+
 export function useInviteSuggestions() {
   return useQuery({
     queryKey: ['invite-suggestions'],
